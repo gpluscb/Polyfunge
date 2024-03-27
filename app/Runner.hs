@@ -108,7 +108,7 @@ associatedChar (Io Break) = 'b'
 associatedChar (Io Halt) = 'h'
 associatedChar (Io Error) = 'e'
 
-data EndOfProgram = Halted | Errored Int
+data EndOfProgram = Died | Halted Int | Errored Int
   deriving (Read, Show, Eq)
 
 type IoInputOperation m = m Int
@@ -158,7 +158,11 @@ tick ioOperations state =
           )
           (Right [])
           <$> collisionResults
-   in mapRight (\valuesAfterHandling -> state {values = valuesAfterHandling}) <$> valuesAfterCollisionHandling
+      -- A board with no values may exist for one tick, therefore check old values instead of new ones
+      isDead = null oldValues
+   in if isDead
+        then return $ Left Died
+        else mapRight (\valuesAfterHandling -> state {values = valuesAfterHandling}) <$> valuesAfterCollisionHandling
 
 moveValue :: Value -> Value
 moveValue value =
@@ -252,7 +256,7 @@ handleCollision (_, outputOperation, _) (Io PrintAscii) [value] =
         outputOperation $ show char
         return $ Right [value]
 handleCollision (_, _, breakOperation) (Io Break) [value] = breakOperation $> Right [value]
-handleCollision _ (Io Halt) [_] = return $ Left Halted
+handleCollision _ (Io Halt) [value] = return $ Left $ Halted (numericValue value)
 handleCollision _ (Io Error) [value] = return $ Left $ Errored (numericValue value)
 -- Values annihilate each other if more than one value is present
 handleCollision _ (Io _) (_ : _ : _) = return $ Right []
