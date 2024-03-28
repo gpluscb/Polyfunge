@@ -2,14 +2,21 @@ module Utils where
 
 import Data.Char (isSpace)
 import Data.List (dropWhileEnd)
-import Data.Maybe
 import Text.Read (readMaybe)
 
 mapIf :: (a -> Bool) -> (a -> a) -> [a] -> [a]
 mapIf predicate f = map $ \x -> if predicate x then f x else x
 
-gridLengths :: [[a]] -> (Int, Int)
-gridLengths xs = (length $ fromMaybe [] $ listToMaybe xs, length xs)
+gridDimensions :: [[a]] -> (Int, Int)
+gridDimensions xs =
+  let numRows = length xs
+      numCols = if numRows == 0 then 0 else maximum $ map length xs
+   in (numCols, numRows)
+
+isInBounds :: (Int, Int) -> (Int, Int) -> Bool
+isInBounds (boundsX, boundsY) position =
+  let (x, y) = position
+   in x >= 0 && y >= 0 && x < boundsX && y < boundsY
 
 gridIndices :: [[a]] -> [(Int, Int, a)]
 gridIndices xs =
@@ -32,3 +39,6 @@ getNumber :: IO Int
 getNumber = do
   line <- getLine
   maybe getNumber return (readMaybe (trim line))
+
+push :: a -> [a] -> [a]
+push = (++) . (: []) -- Ooooo I'm a wizard
