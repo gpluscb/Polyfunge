@@ -16,7 +16,10 @@ parseProgram program =
    in parseProgramRecursive 0 rows startingProgramState
 
 parseProgramRecursive :: Int -> [String] -> ProgramState -> Either ParseError ProgramState
-parseProgramRecursive _ [] state = Right state
+parseProgramRecursive _ [] state =
+  if isValid state
+    then Right state
+    else Left InvalidProgram
 parseProgramRecursive row (line : rest) state =
   let lineParseResult = parseLine line row
       newProgramState = (\(rowValues, rowBlocks) -> state {cells = cells state ++ [rowBlocks], values = values state ++ rowValues}) <$> lineParseResult
@@ -41,7 +44,7 @@ parseLineRecursive (col, row) vals blocks ('\'' : c : rest) =
       updateValues = push newValue vals
       updatedBlocks = blocks ++ replicate 2 (Util Default)
    in parseLineRecursive (col + 2, row) updateValues updatedBlocks rest
-parseLineRecursive _ _ _ ['\''] = Left EmptyLiteral
+parseLineRecursive _ _ _ "'" = Left EmptyLiteral
 parseLineRecursive (col, row) vals blocks ('(' : rest) =
   let parseDigitsResult = parseLargeNumber rest
    in parseDigitsResult
