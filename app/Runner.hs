@@ -59,10 +59,10 @@ moveValue value =
     then
       let (x, y) = position value
        in case momentum value of
-            DirUp -> value {position = (x, y + 1)}
-            DirDown -> value {position = (x, y - 1)}
-            DirRight -> value {position = (x + 1, y)}
-            DirLeft -> value {position = (x - 1, y)}
+            DirUp -> value {position = (x, pred y)}
+            DirDown -> value {position = (x, succ y)}
+            DirRight -> value {position = (succ x, y)}
+            DirLeft -> value {position = (pred x, y)}
     else value
 
 handleCollision :: (Monad m) => IoOperations m -> Block -> [Value] -> m (Either EndOfProgram [Value])
@@ -139,7 +139,9 @@ handleCollision (_, outputOperation, _) (Io PrintAscii) [value] =
    in do
         outputOperation $ show char
         return $ Right [value]
-handleCollision (_, _, breakOperation) (Io Break) [value] = breakOperation $> Right [value]
+handleCollision (_, _, breakOperation) (Io Break) [value] = do
+  _ <- breakOperation
+  return $ Right [value]
 handleCollision _ (Io Halt) [value] = return $ Left $ Halted (numericValue value)
 handleCollision _ (Io Error) [value] = return $ Left $ Errored (numericValue value)
 -- Values annihilate each other if more than one value is present
