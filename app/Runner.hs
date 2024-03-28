@@ -34,7 +34,6 @@ run ioOperations state =
     Left end -> return (end, state)
     Right nextState -> run ioOperations nextState
 
--- TODO: Error takes prio over halt and all blocks should be executed before halting
 tick :: (Monad m) => IoOperations m -> ProgramState -> m (Either EndOfProgram ProgramState)
 tick ioOperations state =
   let blocks = cells state
@@ -48,7 +47,25 @@ tick ioOperations state =
                in handleCollision ioOperations block valuesAtBlock
           )
           (gridIndices blocks)
-      valuesAfterCollisionHandling = (fmap . fmap) concat (sequence <$> collisionResults)
+      valuesAfterCollisionHandling =
+        foldl
+          ( \a b ->
+              case (a, b) of
+                -- Errors have highest priority
+                (e@(Left (Errored _)), _) -> e
+                (_, e@(Left (Errored _))) -> e
+                -- Next priority is halted
+                (h@(Left (Halted _)), _) -> h
+                (_, h@(Left (Halted _))) -> h
+                -- Next priority is any other termination
+                -- Dath can't be returned here but still
+                (t@(Left _), _) -> t
+                (_, t@(Left _)) -> t
+                -- Lastly, we know both are okay
+                (Right valuesA, Right valuesB) -> Right $ valuesA ++ valuesB
+          )
+          (Right [])
+          <$> collisionResults
       -- A board with no values may exist for one tick, therefore check old values instead of new ones
       isDead = null oldValues
    in if isDead

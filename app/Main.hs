@@ -64,6 +64,11 @@ primesExample =
   \x                       #             \n\
   \                        ^<            "
 
+erorrPriorityExample :: String
+erorrPriorityExample =
+  "1234\n\
+  \pIhe"
+
 infiniteLoopExample :: String
 infiniteLoopExample =
   "1 \n\
