@@ -42,12 +42,12 @@ tick ioOperations state =
       oldValues = values state
       -- First advance values leaving jump pad by one
       jumpedValues =
-        map moveValue $
-          filter
-            ( \Value {position = (x, y)} ->
-                blocks !! y !! x == Control Jump
-            )
-            oldValues
+        mapIf
+          ( \Value {position = (x, y)} ->
+              blocks !! y !! x == Control Jump
+          )
+          moveValue
+          oldValues
       movedValues = filter (isInBounds (gridDimensions blocks) . position) (map moveValue jumpedValues)
       collisionResults =
         mapM
