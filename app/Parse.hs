@@ -2,7 +2,7 @@
 
 module Parse where
 
-import Data.Char (digitToInt, isDigit)
+import Data.Char (digitToInt, isDigit, ord)
 import ProgramData
 import Utils
 
@@ -30,6 +30,18 @@ parseLineRecursive _ vals blocks "\n" = Right (vals, blocks)
 parseLineRecursive _ vals blocks "" = Right (vals, blocks)
 parseLineRecursive (col, row) vals blocks (' ' : rest) =
   parseLineRecursive (succ col, row) vals (blocks ++ [Util Default]) rest
+parseLineRecursive (col, row) vals blocks ('\'' : c : rest) =
+  let newValue =
+        Value
+          { position = (col, row),
+            numericValue = ord c,
+            momentum = DirDown,
+            waiting = False
+          }
+      updateValues = push newValue vals
+      updatedBlocks = blocks ++ replicate 2 (Util Default)
+   in parseLineRecursive (col + 2, row) updateValues updatedBlocks rest
+parseLineRecursive _ _ _ ['\''] = Left EmptyLiteral
 parseLineRecursive (col, row) vals blocks ('(' : rest) =
   let parseDigitsResult = parseLargeNumber rest
    in parseDigitsResult
