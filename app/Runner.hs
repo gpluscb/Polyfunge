@@ -40,7 +40,15 @@ tick :: (Monad m) => IoOperations m -> ProgramState -> m (Either EndOfProgram Pr
 tick ioOperations state =
   let blocks = cells state
       oldValues = values state
-      movedValues = filter (isInBounds (gridDimensions blocks) . position) (map moveValue oldValues)
+      -- First advance values leaving jump pad by one
+      jumpedValues =
+        map moveValue $
+          filter
+            ( \Value {position = (x, y)} ->
+                blocks !! y !! x == Control Jump
+            )
+            oldValues
+      movedValues = filter (isInBounds (gridDimensions blocks) . position) (map moveValue jumpedValues)
       collisionResults =
         mapM
           ( \(x, y, block) ->
@@ -100,8 +108,9 @@ handleCollision _ (Control (Conveyor conveyorDir)) [value] =
   return $ Right [value {momentum = conveyorDir}]
 handleCollision _ (Control Wait) [value] =
   return $ Right [value {waiting = not (waiting value)}]
+-- Stepping onto the jump block does not do anything, only leaving it does
 handleCollision _ (Control Jump) [value] =
-  return $ Right [moveValue value]
+  return $ Right [value]
 handleCollision _ (Control VGate) values =
   return $
     Right $
@@ -139,7 +148,7 @@ handleCollision _ (BinaryArith arithBlock) [valueA, valueB] =
           ]
 handleCollision _ (BinaryArith _) [value] = return $ Right [value]
 -- Values annihilate each other if more than two inputs are given
-handleCollision _ (BinaryArith _) (_ : _ : _) = return $ Right []
+handleCollision _ (BinaryArith _) (_ : _ : _ : _) = return $ Right []
 --------------------
 handleCollision _ (UnaryArith arithBlock) [value] =
   return $ Right [value {numericValue = applyUnaryArith arithBlock (numericValue value)}]
