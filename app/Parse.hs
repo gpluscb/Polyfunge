@@ -1,10 +1,12 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Parse where
 
-import Data.Char (digitToInt, isNumber)
+import Data.Char (digitToInt, isDigit)
 import ProgramData
 import Utils
 
-data ParseError = UnrecognisedChar Char | InvalidProgram
+data ParseError = UnrecognisedChar Char | EmptyLiteral | InvalidProgram
   deriving (Read, Show, Eq)
 
 parseProgram :: String -> Either ParseError ProgramState
@@ -28,8 +30,23 @@ parseLineRecursive _ vals blocks "\n" = Right (vals, blocks)
 parseLineRecursive _ vals blocks "" = Right (vals, blocks)
 parseLineRecursive (col, row) vals blocks (' ' : rest) =
   parseLineRecursive (succ col, row) vals (blocks ++ [Util Default]) rest
+parseLineRecursive (col, row) vals blocks ('(' : rest) =
+  let parseDigitsResult = parseLargeNumber rest
+   in parseDigitsResult
+        >>= ( \ParseMultiDigitsResult {number, remaining, numberLength} ->
+                let newValue =
+                      Value
+                        { position = (col, row),
+                          numericValue = number,
+                          momentum = DirDown,
+                          waiting = False
+                        }
+                    updatedValues = push newValue vals
+                    updatedBlocks = blocks ++ replicate (numberLength + 1) (Util Default)
+                 in parseLineRecursive (col + numberLength + 1, row) updatedValues updatedBlocks remaining
+            )
 parseLineRecursive (col, row) vals blocks (c : rest)
-  | isNumber c =
+  | isDigit c =
       let newValue =
             Value
               { position = (col, row),
@@ -46,3 +63,29 @@ parseLineRecursive (col, row) vals blocks (c : rest)
        in case maybeUpdatedBlocks of
             Just updatedBlocks -> parseLineRecursive (succ col, row) vals updatedBlocks rest
             Nothing -> Left $ UnrecognisedChar c
+
+data ParseMultiDigitsResult = ParseMultiDigitsResult
+  { number :: Int,
+    remaining :: String,
+    numberLength :: Int
+  }
+
+parseLargeNumber :: String -> Either ParseError ParseMultiDigitsResult
+parseLargeNumber str =
+  let digits = takeWhile isDigit str
+      isEmpty = null digits
+   in if isEmpty
+        then Left EmptyLiteral
+        else
+          Right $ parseLargeNumberRecursive 0 0 str
+
+parseLargeNumberRecursive :: Int -> Int -> String -> ParseMultiDigitsResult
+parseLargeNumberRecursive num amount (d : rest)
+  | isDigit d =
+      parseLargeNumberRecursive (10 * num + digitToInt d) (succ amount) rest
+parseLargeNumberRecursive num amount rest =
+  ParseMultiDigitsResult
+    { number = num,
+      remaining = rest,
+      numberLength = amount
+    }
