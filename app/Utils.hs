@@ -41,4 +41,4 @@ getNumber = do
   maybe getNumber return (readMaybe (trim line))
 
 push :: a -> [a] -> [a]
-push = (++) . (: []) -- Ooooo I'm a wizard
+push = flip (++) . (: []) -- Ooooo I'm a wizard
