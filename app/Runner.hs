@@ -141,11 +141,21 @@ handleCollision _ (Control _) (_ : _ : _) = return $ Right []
 handleCollision _ (BinaryArith arithBlock) [valueA, valueB] =
   let a = numericValue valueA
       b = numericValue valueB
+      maybeResultA = applyBinaryArith arithBlock a b
+      maybeResultB = applyBinaryArith arithBlock b a
+      results = case (maybeResultA, maybeResultB) of
+        (Just resA, Just resB) -> Just (resA, resB)
+        (_, _) -> Nothing
    in return $
-        Right
-          [ valueA {numericValue = applyBinaryArith arithBlock a b},
-            valueB {numericValue = applyBinaryArith arithBlock b a}
-          ]
+        Right $
+          maybe
+            [] -- Annihilation on invalid computation (e.g. division by 0)
+            ( \(resA, resB) ->
+                [ valueA {numericValue = resA},
+                  valueB {numericValue = resB}
+                ]
+            )
+            results
 handleCollision _ (BinaryArith _) [value] = return $ Right [value]
 -- Values annihilate each other if more than two inputs are given
 handleCollision _ (BinaryArith _) (_ : _ : _ : _) = return $ Right []

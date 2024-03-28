@@ -58,14 +58,14 @@ data ControlFlowBlock = Conveyor Direction | Wait | Jump | VGate | HGate | Quest
 data BinaryArithBlock = Add | Sub | Mul | Div | Mod | Gt | Lt
   deriving (Read, Show, Eq, Enum)
 
-applyBinaryArith :: BinaryArithBlock -> Int -> Int -> Int
-applyBinaryArith Add a b = a + b
-applyBinaryArith Sub a b = a - b
-applyBinaryArith Mul a b = a * b
-applyBinaryArith Div a b = quot a b
-applyBinaryArith Mod a b = mod a b
-applyBinaryArith Gt a b = if a > b then 0 else 1
-applyBinaryArith Lt a b = if a < b then 0 else 1
+applyBinaryArith :: BinaryArithBlock -> Int -> Int -> Maybe Int
+applyBinaryArith Add a b = Just $ a + b
+applyBinaryArith Sub a b = Just $ a - b
+applyBinaryArith Mul a b = Just $ a * b
+applyBinaryArith Div a b = if b == 0 then Nothing else Just $ quot a b
+applyBinaryArith Mod a b = Just $ mod a b
+applyBinaryArith Gt a b = Just $ if a > b then 0 else 1
+applyBinaryArith Lt a b = Just $ if a < b then 0 else 1
 
 data UnaryArithBlock = Zero
   deriving (Read, Show, Eq, Enum)
