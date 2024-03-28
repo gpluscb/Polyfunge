@@ -10,8 +10,18 @@ mapIf predicate f = map $ \x -> if predicate x then f x else x
 gridDimensions :: [[a]] -> (Int, Int)
 gridDimensions xs =
   let numRows = length xs
-      numCols = if numRows == 0 then 0 else maximum $ map length xs
+      numCols = maxWidth xs
    in (numCols, numRows)
+
+maxWidth :: [[a]] -> Int
+maxWidth [] = 0
+maxWidth xs = maximum $ map length xs
+
+padToEqualWidth :: a -> [[a]] -> [[a]]
+padToEqualWidth def xs = map (padTo def $ maxWidth xs) xs
+
+padTo :: a -> Int -> [a] -> [a]
+padTo d n xs = take n (xs ++ repeat d)
 
 isInBounds :: (Int, Int) -> (Int, Int) -> Bool
 isInBounds (boundsX, boundsY) position =

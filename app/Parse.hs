@@ -6,23 +6,28 @@ import Data.Char (digitToInt, isDigit, ord)
 import ProgramData
 import Utils
 
-data ParseError = UnrecognisedChar Char | EmptyLiteral | InvalidProgram
+data ParseError = UnrecognisedChar Char | EmptyLiteral
   deriving (Read, Show, Eq)
 
 parseProgram :: String -> Either ParseError ProgramState
 parseProgram program =
   let rows = lines program
       startingProgramState = ProgramState {cells = [], values = []}
-   in parseProgramRecursive 0 rows startingProgramState
+      parseResult = parseProgramRecursive 0 rows startingProgramState
+   in ( \programState ->
+          programState {cells = padToEqualWidth (Util Default) $ cells programState}
+      )
+        <$> parseResult
 
 parseProgramRecursive :: Int -> [String] -> ProgramState -> Either ParseError ProgramState
-parseProgramRecursive _ [] state =
-  if isValid state
-    then Right state
-    else Left InvalidProgram
+parseProgramRecursive _ [] state = Right state
 parseProgramRecursive row (line : rest) state =
   let lineParseResult = parseLine line row
-      newProgramState = (\(rowValues, rowBlocks) -> state {cells = cells state ++ [rowBlocks], values = values state ++ rowValues}) <$> lineParseResult
+      newProgramState =
+        ( \(rowValues, rowBlocks) ->
+            state {cells = cells state ++ [rowBlocks], values = values state ++ rowValues}
+        )
+          <$> lineParseResult
    in parseProgramRecursive (succ row) rest =<< newProgramState
 
 parseLine :: String -> Int -> Either ParseError ([Value], [Block])
@@ -86,6 +91,12 @@ data ParseMultiDigitsResult = ParseMultiDigitsResult
   }
 
 parseLargeNumber :: String -> Either ParseError ParseMultiDigitsResult
+parseLargeNumber ('-' : rest) =
+  let positivePart = parseLargeNumber rest
+   in ( \ParseMultiDigitsResult {number, remaining, numberLength} ->
+          ParseMultiDigitsResult {number = -number, remaining = remaining, numberLength = succ numberLength}
+      )
+        <$> positivePart
 parseLargeNumber str =
   let digits = takeWhile isDigit str
       isEmpty = null digits

@@ -34,11 +34,13 @@ run ioOperations state =
     Left end -> return (end, state)
     Right nextState -> run ioOperations nextState
 
+-- TODO: Error takes prio over halt and all blocks should be executed before halting
 tick :: (Monad m) => IoOperations m -> ProgramState -> m (Either EndOfProgram ProgramState)
 tick ioOperations state =
   let blocks = cells state
       oldValues = values state
       movedValues = filter (isInBounds (gridDimensions blocks) . position) (map moveValue oldValues)
+      -- TODO: collisions into the same direction
       collisionResults =
         mapM
           ( \(x, y, block) ->

@@ -30,6 +30,16 @@ helloWorldExample =
   "'!'d'l'r'o'w' ','o'l'l'e'H \n\
   \> > > > > > > > > > > > > P"
 
+cuteExample :: String
+cuteExample =
+  "   0   (-3 (-82(67 (18 (-1 (-15(-101\n\
+  \(117\n\
+  \ xv<   <   <   <   <   <   <   <\n\
+  \>:+ <\n\
+  \  P\n\
+  \x?x\n\
+  \ h"
+
 primesExample :: String
 primesExample =
   "               1          2           \n\
