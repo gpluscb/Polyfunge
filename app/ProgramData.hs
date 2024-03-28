@@ -73,7 +73,7 @@ data UnaryArithBlock = Zero
 applyUnaryArith :: UnaryArithBlock -> Int -> Int
 applyUnaryArith Zero _ = 0
 
-data UtilBlock = Default | Crossing | Dupe | Destroy
+data UtilBlock = Default | Dupe | Destroy
   deriving (Read, Show, Eq, Enum)
 
 data IoBlock = Input | PrintDecimal | PrintAscii | Break | Halt | Error
@@ -104,7 +104,6 @@ associatedChar (BinaryArith Lt) = 'l'
 associatedChar (UnaryArith Zero) = 'z'
 ---------------------------
 associatedChar (Util Default) = ' '
-associatedChar (Util Crossing) = '~'
 associatedChar (Util Dupe) = ':'
 associatedChar (Util Destroy) = 'x'
 ---------------------------
@@ -137,7 +136,6 @@ associatedBlock 'l' = Just $ BinaryArith Lt
 associatedBlock 'z' = Just $ UnaryArith Zero
 ---------------------------
 associatedBlock ' ' = Just $ Util Default
-associatedBlock '~' = Just $ Util Crossing
 associatedBlock ':' = Just $ Util Dupe
 associatedBlock 'x' = Just $ Util Destroy
 ---------------------------

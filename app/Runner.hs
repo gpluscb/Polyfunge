@@ -138,7 +138,6 @@ handleCollision _ (UnaryArith _) (_ : _ : _) = return $ Right []
 --------------------
 handleCollision _ (Util Default) [value] = return $ Right [value]
 handleCollision _ (Util Default) _ = return $ Right []
-handleCollision _ (Util Crossing) values = return $ Right values
 handleCollision _ (Util Dupe) [value] =
   return $ Right $ value : map (\ortho -> value {momentum = ortho}) (orthos (momentum value))
 -- Values annihilate each other if more than one value is present
