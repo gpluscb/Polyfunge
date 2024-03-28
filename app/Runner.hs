@@ -16,7 +16,7 @@ standardIoInputOperation = getNumber
 type IoOutputOperation m = String -> m ()
 
 standardIoOutputOperation :: IoOutputOperation IO
-standardIoOutputOperation = print
+standardIoOutputOperation = putStrLn
 
 type IoBreakOperation m = m ()
 
@@ -137,7 +137,7 @@ handleCollision (_, outputOperation, _) (Io PrintDecimal) [value] =
 handleCollision (_, outputOperation, _) (Io PrintAscii) [value] =
   let char = chr (numericValue value)
    in do
-        outputOperation $ show char
+        outputOperation [char]
         return $ Right [value]
 handleCollision (_, _, breakOperation) (Io Break) [value] = do
   _ <- breakOperation
