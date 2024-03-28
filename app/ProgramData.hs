@@ -26,7 +26,7 @@ data Value = Value
   deriving (Read, Show, Eq)
 
 data Direction = DirUp | DirDown | DirLeft | DirRight
-  deriving (Read, Show, Eq, Enum)
+  deriving (Read, Show, Ord, Eq, Enum)
 
 isVertical :: Direction -> Bool
 isVertical DirUp = True

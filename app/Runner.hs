@@ -5,6 +5,8 @@ module Runner where
 
 import Data.Char (chr)
 import Data.Functor
+import Data.List.NonEmpty (groupAllWith)
+import qualified Data.List.NonEmpty
 import ProgramData
 import Utils
 
@@ -39,12 +41,20 @@ tick ioOperations state =
   let blocks = cells state
       oldValues = values state
       movedValues = filter (isInBounds (gridDimensions blocks) . position) (map moveValue oldValues)
-      -- TODO: collisions into the same direction
       collisionResults =
         mapM
           ( \(x, y, block) ->
               let valuesAtBlock = filter (\Value {position} -> position == (x, y)) movedValues
-               in handleCollision ioOperations block valuesAtBlock
+                  groupedByMomentum = groupAllWith momentum valuesAtBlock
+                  afterSameDirectionCollisions =
+                    map
+                      ( \values ->
+                          let newNumericValue = sum $ Data.List.NonEmpty.map numericValue values
+                              newWaiting = all waiting values -- TODO: Waiting behaviour is as of now unspecified
+                           in (Data.List.NonEmpty.head values) {numericValue = newNumericValue, waiting = newWaiting}
+                      )
+                      groupedByMomentum
+               in handleCollision ioOperations block afterSameDirectionCollisions
           )
           (gridIndices blocks)
       valuesAfterCollisionHandling =
