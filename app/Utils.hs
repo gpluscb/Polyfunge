@@ -24,14 +24,6 @@ gridIndices xs =
       values = concatMap (\(rowIdx, row) -> zipWith (\colIdx x -> (colIdx, rowIdx, x)) [0 ..] row) rows
    in values
 
-mapLeft :: (a -> a') -> Either a b -> Either a' b
-mapLeft f (Left x) = Left $ f x
-mapLeft _ (Right y) = Right y
-
-mapRight :: (b -> b') -> Either a b -> Either a b'
-mapRight _ (Left x) = Left x
-mapRight f (Right y) = Right $ f y
-
 trim :: String -> String
 trim = dropWhile isSpace . dropWhileEnd isSpace
 

@@ -46,20 +46,12 @@ tick ioOperations state =
                in handleCollision ioOperations block valuesAtBlock
           )
           (gridIndices blocks)
-      valuesAfterCollisionHandling =
-        foldl
-          ( \prev next -> case (prev, next) of
-              (Right xs, Right nextVals) -> Right (xs ++ nextVals)
-              (Left err, _) -> Left err
-              (Right _, Left err) -> Left err
-          )
-          (Right [])
-          <$> collisionResults
+      valuesAfterCollisionHandling = (fmap . fmap) concat (sequence <$> collisionResults)
       -- A board with no values may exist for one tick, therefore check old values instead of new ones
       isDead = null oldValues
    in if isDead
         then return $ Left Died
-        else mapRight (\valuesAfterHandling -> state {values = valuesAfterHandling}) <$> valuesAfterCollisionHandling
+        else fmap (\valuesAfterHandling -> state {values = valuesAfterHandling}) <$> valuesAfterCollisionHandling
 
 moveValue :: Value -> Value
 moveValue value =
