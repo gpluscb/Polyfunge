@@ -7,7 +7,7 @@ Maybe you'll even manage to compute digits of pi while you're at it.
 Values start by moving down and are affected by the variuos blocks.
 See [the specification](https://gitlab.com/alice-lefebvre/polyfunge/-/blob/main/readme.md) for details.
 
-Example program computing the [Fibonnachi sequence](https://en.wikipedia.org/wiki/Fibonacci_sequence), [courtesy of Alice](https://gitlab.com/alice-lefebvre/polyfunge/-/blob/main/examples/fibonacci.pf):
+Example program computing the [Fibonacci sequence](https://en.wikipedia.org/wiki/Fibonacci_sequence), [courtesy of Alice](https://gitlab.com/alice-lefebvre/polyfunge/-/blob/main/examples/fibonacci.pf):
 
 ```
 1
