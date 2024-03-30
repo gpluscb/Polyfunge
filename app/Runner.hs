@@ -3,9 +3,9 @@
 
 module Runner where
 
+import qualified Data.Bifunctor
 import Data.Char (chr, ord)
 import Data.Functor
-import Data.List.NonEmpty (groupAllWith)
 import qualified Data.List.NonEmpty
 import ProgramData
 import Utils
@@ -68,23 +68,32 @@ tick ioOperations state =
           )
           moveValue
           oldValues
+      -- Move values
       movedValues = filter (isInBounds (gridDimensions blocks) . position) (map moveValue jumpedValues)
-      collisionResults =
-        mapM
+      -- Find values at each block
+      blocksWithValues =
+        map
           ( \(x, y, block) ->
-              let valuesAtBlock = filter (\Value {position} -> position == (x, y)) movedValues
-                  groupedByMomentum = groupAllWith momentum valuesAtBlock
-                  afterSameDirectionCollisions =
-                    map
-                      ( \values ->
-                          let newNumericValue = sum $ Data.List.NonEmpty.map numericValue values
-                              newWaiting = all waiting values -- TODO: Waiting behaviour is as of now unspecified
-                           in (Data.List.NonEmpty.head values) {numericValue = newNumericValue, waiting = newWaiting}
-                      )
-                      groupedByMomentum
-               in handleCollision ioOperations block afterSameDirectionCollisions
+              ( block,
+                filter (\Value {position} -> position == (x, y)) movedValues
+              )
           )
           (gridIndices blocks)
+      -- Do fusion
+      blocksWithValuesGroupedByMomentum =
+        map (Data.Bifunctor.second (Data.List.NonEmpty.groupAllWith momentum)) blocksWithValues
+      blocksWithValuesAfterFusion =
+        map (Data.Bifunctor.second doFusion) blocksWithValuesGroupedByMomentum
+        where
+          doFusion =
+            map
+              ( \values ->
+                  let updatedNumericValue = sum $ Data.List.NonEmpty.map numericValue values
+                      updatedWaiting = any waiting values
+                   in (Data.List.NonEmpty.head values) {numericValue = updatedNumericValue, waiting = updatedWaiting}
+              )
+      -- Handle collisions
+      collisionResults = mapM (uncurry (handleCollision ioOperations)) blocksWithValuesAfterFusion
       valuesAfterCollisionHandling =
         foldl
           ( \a b ->
