@@ -67,11 +67,13 @@ applyBinaryArith Mod a b = Just $ mod a b
 applyBinaryArith Gt a b = Just $ if a > b then 0 else 1
 applyBinaryArith Lt a b = Just $ if a < b then 0 else 1
 
-data UnaryArithBlock = Zero
+data UnaryArithBlock = Zero | Inc | Dec
   deriving (Read, Show, Eq, Enum)
 
 applyUnaryArith :: UnaryArithBlock -> Int -> Int
 applyUnaryArith Zero _ = 0
+applyUnaryArith Inc x = succ x
+applyUnaryArith Dec x = pred x
 
 data UtilBlock = Default | Dupe | Destroy
   deriving (Read, Show, Eq, Enum)
@@ -103,6 +105,8 @@ associatedChar (BinaryArith Gt) = 'g'
 associatedChar (BinaryArith Lt) = 'l'
 ---------------------------
 associatedChar (UnaryArith Zero) = 'z'
+associatedChar (UnaryArith Inc) = 'i'
+associatedChar (UnaryArith Dec) = 'd'
 ---------------------------
 associatedChar (Util Default) = ' '
 associatedChar (Util Dupe) = ':'
@@ -136,6 +140,8 @@ associatedBlock 'g' = Just $ BinaryArith Gt
 associatedBlock 'l' = Just $ BinaryArith Lt
 ---------------------------
 associatedBlock 'z' = Just $ UnaryArith Zero
+associatedBlock 'i' = Just $ UnaryArith Inc
+associatedBlock 'd' = Just $ UnaryArith Dec
 ---------------------------
 associatedBlock ' ' = Just $ Util Default
 associatedBlock ':' = Just $ Util Dupe
