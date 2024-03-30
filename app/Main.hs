@@ -2,15 +2,17 @@ module Main where
 
 import qualified Parse
 import qualified Runner
+import System.Environment (getArgs)
 
 main :: IO ()
 main =
   do
+    fileName <- head <$> getArgs
+    program <- readFile fileName
     x <-
       mapM
         (Runner.run Runner.standardIoOperations)
-        ( Parse.parseProgram primesExample
-        )
+        (Parse.parseProgram program)
     print x
 
 fibExample :: String
