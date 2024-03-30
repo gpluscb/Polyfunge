@@ -52,7 +52,7 @@ orthos DirRight = orthos DirLeft
 data Block = Control ControlFlowBlock | BinaryArith BinaryArithBlock | UnaryArith UnaryArithBlock | Util UtilBlock | Io IoBlock
   deriving (Read, Show, Eq)
 
-data ControlFlowBlock = Conveyor Direction | Wait | Jump | VGate | HGate | Question
+data ControlFlowBlock = Conveyor Direction | Wait | Jump | VGate | HGate
   deriving (Read, Show, Eq)
 
 data BinaryArithBlock = Add | Sub | Mul | Div | Mod | Gt | Lt
@@ -73,7 +73,7 @@ data UnaryArithBlock = Zero
 applyUnaryArith :: UnaryArithBlock -> Int -> Int
 applyUnaryArith Zero _ = 0
 
-data UtilBlock = Default | Dupe | Destroy
+data UtilBlock = Default | Dupe | Destroy | Test | Not
   deriving (Read, Show, Eq, Enum)
 
 data IoBlock = Input | PrintDecimal | PrintAscii | Break | Halt | Error
@@ -91,7 +91,6 @@ associatedChar (Control Wait) = 'w'
 associatedChar (Control Jump) = '#'
 associatedChar (Control VGate) = '|'
 associatedChar (Control HGate) = '_'
-associatedChar (Control Question) = '?'
 ---------------------------
 associatedChar (BinaryArith Add) = '+'
 associatedChar (BinaryArith Sub) = '-'
@@ -106,6 +105,8 @@ associatedChar (UnaryArith Zero) = 'z'
 associatedChar (Util Default) = ' '
 associatedChar (Util Dupe) = ':'
 associatedChar (Util Destroy) = 'x'
+associatedChar (Util Test) = '?'
+associatedChar (Util Not) = '!'
 ---------------------------
 associatedChar (Io Input) = 'I'
 associatedChar (Io PrintDecimal) = 'p'
@@ -123,7 +124,6 @@ associatedBlock 'w' = Just $ Control Wait
 associatedBlock '#' = Just $ Control Jump
 associatedBlock '|' = Just $ Control VGate
 associatedBlock '_' = Just $ Control HGate
-associatedBlock '?' = Just $ Control Question
 ---------------------------
 associatedBlock '+' = Just $ BinaryArith Add
 associatedBlock '-' = Just $ BinaryArith Sub
@@ -138,6 +138,8 @@ associatedBlock 'z' = Just $ UnaryArith Zero
 associatedBlock ' ' = Just $ Util Default
 associatedBlock ':' = Just $ Util Dupe
 associatedBlock 'x' = Just $ Util Destroy
+associatedBlock '?' = Just $ Util Test
+associatedBlock '!' = Just $ Util Not
 ---------------------------
 associatedBlock 'I' = Just $ Io Input
 associatedBlock 'p' = Just $ Io PrintDecimal
