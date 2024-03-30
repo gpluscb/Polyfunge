@@ -68,7 +68,7 @@ tick ioOperations state =
           )
           moveValue
           oldValues
-      -- Move values
+      -- Move values and delete out of bounds ones
       movedValues = filter (isInBounds (gridDimensions blocks) . position) (map moveValue jumpedValues)
       -- Find values at each block
       blocksWithValues =
