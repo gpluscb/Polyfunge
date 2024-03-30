@@ -78,7 +78,7 @@ applyUnaryArith Dec x = pred x
 data UtilBlock = Default | Dupe | Destroy
   deriving (Read, Show, Eq, Enum)
 
-data IoBlock = Input | PrintDecimal | PrintAscii | Break | Halt | Error
+data IoBlock = InputDecimal | InputAscii | PrintDecimal | PrintAscii | Break | Halt | Error
   deriving (Read, Show, Eq, Enum)
 
 data EndOfProgram = Died | Halted Int | Errored Int
@@ -112,7 +112,8 @@ associatedChar (Util Default) = ' '
 associatedChar (Util Dupe) = ':'
 associatedChar (Util Destroy) = 'x'
 ---------------------------
-associatedChar (Io Input) = 'I'
+associatedChar (Io InputDecimal) = 'N'
+associatedChar (Io InputAscii) = 'I'
 associatedChar (Io PrintDecimal) = 'p'
 associatedChar (Io PrintAscii) = 'P'
 associatedChar (Io Break) = 'b'
@@ -147,7 +148,8 @@ associatedBlock ' ' = Just $ Util Default
 associatedBlock ':' = Just $ Util Dupe
 associatedBlock 'x' = Just $ Util Destroy
 ---------------------------
-associatedBlock 'I' = Just $ Io Input
+associatedBlock 'N' = Just $ Io InputDecimal
+associatedBlock 'I' = Just $ Io InputAscii
 associatedBlock 'p' = Just $ Io PrintDecimal
 associatedBlock 'P' = Just $ Io PrintAscii
 associatedBlock 'b' = Just $ Io Break

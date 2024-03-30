@@ -3,17 +3,22 @@
 
 module Runner where
 
-import Data.Char (chr)
+import Data.Char (chr, ord)
 import Data.Functor
 import Data.List.NonEmpty (groupAllWith)
 import qualified Data.List.NonEmpty
 import ProgramData
 import Utils
 
-type IoInputOperation m = m Int
+type IoInputNumberOperation m = m Int
 
-standardIoInputOperation :: IoInputOperation IO
+standardIoInputOperation :: IoInputNumberOperation IO
 standardIoInputOperation = getNumber
+
+type IoInputAsciiOperation m = m Char
+
+standardIoInputAsciiOperation :: IoInputAsciiOperation IO
+standardIoInputAsciiOperation = getChar
 
 type IoOutputOperation m = String -> m ()
 
@@ -25,10 +30,21 @@ type IoBreakOperation m = m ()
 standardIoBreakOperation :: IoBreakOperation IO
 standardIoBreakOperation = void getLine
 
-type IoOperations m = (IoInputOperation m, IoOutputOperation m, IoBreakOperation m)
+data IoOperations m = IoOperations
+  { inputNumber :: IoInputNumberOperation m,
+    inputAscii :: IoInputAsciiOperation m,
+    output :: IoOutputOperation m,
+    breakOp :: IoBreakOperation m
+  }
 
 standardIoOperations :: IoOperations IO
-standardIoOperations = (standardIoInputOperation, standardIoOutputOperation, standardIoBreakOperation)
+standardIoOperations =
+  IoOperations
+    { inputNumber = standardIoInputOperation,
+      inputAscii = standardIoInputAsciiOperation,
+      output = standardIoOutputOperation,
+      breakOp = standardIoBreakOperation
+    }
 
 run :: (Monad m) => IoOperations m -> ProgramState -> m (EndOfProgram, ProgramState)
 run ioOperations state =
@@ -170,21 +186,25 @@ handleCollision _ (Util Destroy) _ = return $ Right []
 -- Values annihilate each other if more than one value is present
 handleCollision _ (Util _) (_ : _ : _) = return $ Right []
 --------------------
-handleCollision (inputOperation, _, _) (Io Input) [value] =
+handleCollision IoOperations {inputNumber} (Io InputDecimal) [value] =
   do
-    c <- inputOperation
-    return $ Right [value {numericValue = c}]
-handleCollision (_, outputOperation, _) (Io PrintDecimal) [value] =
+    n <- inputNumber
+    return $ Right [value {numericValue = n}]
+handleCollision IoOperations {inputAscii} (Io InputAscii) [value] =
   do
-    outputOperation $ show (numericValue value)
+    c <- inputAscii
+    return $ Right [value {numericValue = ord c}]
+handleCollision IoOperations {output} (Io PrintDecimal) [value] =
+  do
+    output $ show (numericValue value)
     return $ Right [value]
-handleCollision (_, outputOperation, _) (Io PrintAscii) [value] =
+handleCollision IoOperations {output} (Io PrintAscii) [value] =
   let char = chr (numericValue value)
    in do
-        outputOperation [char]
+        output [char]
         return $ Right [value]
-handleCollision (_, _, breakOperation) (Io Break) [value] = do
-  _ <- breakOperation
+handleCollision IoOperations {breakOp} (Io Break) [value] = do
+  _ <- breakOp
   return $ Right [value]
 handleCollision _ (Io Halt) [value] = return $ Left $ Halted (numericValue value)
 handleCollision _ (Io Error) [value] = return $ Left $ Errored (numericValue value)
