@@ -22,6 +22,20 @@ isValid ProgramState {values, cells} =
       valuesValid = all (isInBounds (width, height) . position) values
    in cellsValid && valuesValid
 
+blocksWithValues :: ProgramState -> [[(Block, [Value])]]
+blocksWithValues ProgramState {values, cells} =
+  zipWith
+    ( \y row ->
+        zipWith
+          (\x cell -> (cell, valuesAt x y))
+          [0 ..]
+          row
+    )
+    [0 ..]
+    cells
+  where
+    valuesAt x y = filter (\Value {position} -> position == (x, y)) values
+
 data Value = Value
   { position :: (Int, Int),
     numericValue :: Int,

@@ -3,11 +3,13 @@
 
 module Runner where
 
+import Control.Concurrent (threadDelay)
+import Control.Monad (void)
 import qualified Data.Bifunctor
 import Data.Char (chr, ord)
-import Data.Functor
 import qualified Data.List.NonEmpty
 import ProgramData
+import qualified Render
 import Utils
 
 type IoInputNumberOperation m = m Int
@@ -32,13 +34,27 @@ standardIoOutputOperation = putStrLn
 type IoBreakOperation m = m ()
 
 standardIoBreakOperation :: IoBreakOperation IO
-standardIoBreakOperation = void getLine
+standardIoBreakOperation = return ()
+
+debugIoBreakOperation :: IoBreakOperation IO
+debugIoBreakOperation = void getLine
+
+type IoRenderOperation m = Int -> ProgramState -> m ()
+
+standardIoRenderOperation :: IoRenderOperation IO
+standardIoRenderOperation _ _ = return ()
+
+debugIoRenderOperation :: Int -> IoRenderOperation IO
+debugIoRenderOperation microsecs tickCount state = do
+  _ <- threadDelay microsecs
+  putStrLn $ Render.renderTick tickCount state
 
 data IoOperations m = IoOperations
   { inputNumber :: IoInputNumberOperation m,
     inputAscii :: IoInputAsciiOperation m,
     output :: IoOutputOperation m,
-    breakOp :: IoBreakOperation m
+    breakOp :: IoBreakOperation m,
+    renderOp :: IoRenderOperation m
   }
 
 standardIoOperations :: IoOperations IO
@@ -47,14 +63,36 @@ standardIoOperations =
     { inputNumber = standardIoInputOperation,
       inputAscii = standardIoInputAsciiOperation,
       output = standardIoOutputOperation,
-      breakOp = standardIoBreakOperation
+      breakOp = standardIoBreakOperation,
+      renderOp = standardIoRenderOperation
     }
 
+debugIoOperations :: Int -> IoOperations IO
+debugIoOperations microsecs =
+  IoOperations
+    { inputNumber = standardIoInputOperation,
+      inputAscii = standardIoInputAsciiOperation,
+      output = standardIoOutputOperation,
+      breakOp = debugIoBreakOperation,
+      renderOp = debugIoRenderOperation microsecs
+    }
+
+runNormal :: ProgramState -> IO EndOfProgram
+runNormal = fmap fst . run standardIoOperations
+
+runDebug :: Int -> ProgramState -> IO EndOfProgram
+runDebug microsecs = fmap fst . run (debugIoOperations microsecs)
+
 run :: (Monad m) => IoOperations m -> ProgramState -> m (EndOfProgram, ProgramState)
-run ioOperations state =
-  tick ioOperations state >>= \case
-    Left end -> return (end, state)
-    Right nextState -> run ioOperations nextState
+run = runRecursive 0
+
+runRecursive :: (Monad m) => Int -> IoOperations m -> ProgramState -> m (EndOfProgram, ProgramState)
+runRecursive tickCount ioOperations state =
+  do
+    _ <- renderOp ioOperations tickCount state
+    tick ioOperations state >>= \case
+      Left end -> return (end, state)
+      Right nextState -> runRecursive (succ tickCount) ioOperations nextState
 
 tick :: (Monad m) => IoOperations m -> ProgramState -> m (Either EndOfProgram ProgramState)
 tick ioOperations state =
@@ -71,17 +109,10 @@ tick ioOperations state =
       -- Move values and delete out of bounds ones
       movedValues = filter (isInBounds (gridDimensions blocks) . position) (map moveValue jumpedValues)
       -- Find values at each block
-      blocksWithValues =
-        map
-          ( \(x, y, block) ->
-              ( block,
-                filter (\Value {position} -> position == (x, y)) movedValues
-              )
-          )
-          (gridIndices blocks)
+      blocksWithMovedValues = concat $ blocksWithValues state {values = movedValues}
       -- Do fusion
       blocksWithValuesGroupedByMomentum =
-        map (Data.Bifunctor.second (Data.List.NonEmpty.groupAllWith momentum)) blocksWithValues
+        map (Data.Bifunctor.second (Data.List.NonEmpty.groupAllWith momentum)) blocksWithMovedValues
       blocksWithValuesAfterFusion =
         map (Data.Bifunctor.second doFusion) blocksWithValuesGroupedByMomentum
         where

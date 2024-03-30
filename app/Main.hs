@@ -1,3 +1,5 @@
+{-# LANGUAGE NumericUnderscores #-}
+
 module Main where
 
 import qualified Parse
@@ -11,9 +13,9 @@ main =
     program <- readFile fileName
     x <-
       mapM
-        (Runner.run Runner.standardIoOperations)
+        (Runner.runDebug 100_000)
         (Parse.parseProgram program)
-    print $ fst <$> x
+    print x
 
 fibExample :: String
 fibExample =
