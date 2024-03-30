@@ -4,7 +4,7 @@ Polyfunge is an esoteric programming language where you send unsuspecting values
 such as redirection, cloning, annihilation through collision, jump pads, and fusion.
 Maybe you'll even manage to compute digits of pi while you're at it.
 
-Values start by moving down and are affected by the variuos blocks.
+Values start by moving down and are affected by the various blocks.
 See [the specification](https://gitlab.com/alice-lefebvre/polyfunge/-/blob/main/readme.md) for details.
 
 Example program computing the [Fibonacci sequence](https://en.wikipedia.org/wiki/Fibonacci_sequence), [courtesy of Alice](https://gitlab.com/alice-lefebvre/polyfunge/-/blob/main/examples/fibonacci.pf):
