@@ -13,7 +13,7 @@ main =
       mapM
         (Runner.run Runner.standardIoOperations)
         (Parse.parseProgram program)
-    print x
+    print $ fst <$> x
 
 fibExample :: String
 fibExample =

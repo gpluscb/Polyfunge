@@ -12,23 +12,19 @@ data ParseError = EmptyLiteral
 parseProgram :: String -> Either ParseError ProgramState
 parseProgram program =
   let rows = lines program
-      startingProgramState = ProgramState {cells = [], values = []}
-      parseResult = parseProgramRecursive 0 rows startingProgramState
-   in ( \programState ->
-          programState {cells = padToEqualWidth (Util Default) $ cells programState}
-      )
-        <$> parseResult
+      startingValues = []
+      startingBlocks = []
+      parseResult = parseProgramRecursive 0 rows startingValues startingBlocks
+   in uncurry constructProgramState <$> parseResult
 
-parseProgramRecursive :: Int -> [String] -> ProgramState -> Either ParseError ProgramState
-parseProgramRecursive _ [] state = Right state
-parseProgramRecursive row (line : rest) state =
+parseProgramRecursive :: Int -> [String] -> [Value] -> [[Block]] -> Either ParseError ([Value], [[Block]])
+parseProgramRecursive _ [] values blocks = Right (values, blocks)
+parseProgramRecursive row (line : rest) values blocks =
   let lineParseResult = parseLine line row
       newProgramState =
-        ( \(rowValues, rowBlocks) ->
-            state {cells = cells state ++ [rowBlocks], values = values state ++ rowValues}
-        )
+        (\(rowValues, rowBlocks) -> (values ++ rowValues, blocks ++ [rowBlocks]))
           <$> lineParseResult
-   in parseProgramRecursive (succ row) rest =<< newProgramState
+   in uncurry (parseProgramRecursive (succ row) rest) =<< newProgramState
 
 parseLine :: String -> Int -> Either ParseError ([Value], [Block])
 parseLine line row = parseLineRecursive (0, row) [] [] line
@@ -53,18 +49,17 @@ parseLineRecursive _ _ _ "'" = Left EmptyLiteral
 parseLineRecursive (col, row) vals blocks ('(' : rest) =
   let parseDigitsResult = parseLargeNumber rest
    in parseDigitsResult
-        >>= ( \ParseMultiDigitsResult {number, remaining, numberLength} ->
-                let newValue =
-                      Value
-                        { position = (col, row),
-                          numericValue = number,
-                          momentum = DirDown,
-                          waiting = False
-                        }
-                    updatedValues = push newValue vals
-                    updatedBlocks = blocks ++ replicate (numberLength + 1) (Util Default)
-                 in parseLineRecursive (col + numberLength + 1, row) updatedValues updatedBlocks remaining
-            )
+        >>= \ParseMultiDigitsResult {number, remaining, numberLength} ->
+          let newValue =
+                Value
+                  { position = (col, row),
+                    numericValue = number,
+                    momentum = DirDown,
+                    waiting = False
+                  }
+              updatedValues = push newValue vals
+              updatedBlocks = blocks ++ replicate (numberLength + 1) (Util Default)
+           in parseLineRecursive (col + numberLength + 1, row) updatedValues updatedBlocks remaining
 parseLineRecursive (col, row) vals blocks (c : rest)
   | isDigit c =
       let newValue =

@@ -5,13 +5,18 @@ module ProgramData where
 import Utils
 
 data ProgramState = ProgramState
-  { cells :: [[Block]],
-    values :: [Value]
+  { values :: [Value],
+    cells :: [[Block]]
   }
   deriving (Read, Show, Eq)
 
+constructProgramState :: [Value] -> [[Block]] -> ProgramState
+constructProgramState values blocks =
+  let paddedBlocks = padToEqualWidth (Util Default) blocks
+   in ProgramState {values = values, cells = paddedBlocks}
+
 isValid :: ProgramState -> Bool
-isValid ProgramState {cells, values} =
+isValid ProgramState {values, cells} =
   let (width, height) = gridDimensions cells
       cellsValid = all ((== width) . length) cells
       valuesValid = all (isInBounds (width, height) . position) values
@@ -123,10 +128,10 @@ associatedChar (Io Error) = 'e'
 associatedChar (Unrecognised c) = c
 
 associatedBlock :: Char -> Block
-associatedBlock '^' = Control (Conveyor DirUp)
-associatedBlock 'v' = Control (Conveyor DirDown)
-associatedBlock '<' = Control (Conveyor DirLeft)
-associatedBlock '>' = Control (Conveyor DirRight)
+associatedBlock '^' = Control $ Conveyor DirUp
+associatedBlock 'v' = Control $ Conveyor DirDown
+associatedBlock '<' = Control $ Conveyor DirLeft
+associatedBlock '>' = Control $ Conveyor DirRight
 associatedBlock 'w' = Control Wait
 associatedBlock '#' = Control Jump
 associatedBlock '|' = Control VGate

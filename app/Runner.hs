@@ -86,12 +86,12 @@ tick ioOperations state =
         map (Data.Bifunctor.second doFusion) blocksWithValuesGroupedByMomentum
         where
           doFusion =
-            map
-              ( \values ->
-                  let updatedNumericValue = sum $ Data.List.NonEmpty.map numericValue values
-                      updatedWaiting = any waiting values
-                   in (Data.List.NonEmpty.head values) {numericValue = updatedNumericValue, waiting = updatedWaiting}
-              )
+            map $
+              \values ->
+                let updatedNumericValue = sum $ Data.List.NonEmpty.map numericValue values
+                    updatedWaiting = any waiting values
+                 in (Data.List.NonEmpty.head values) {numericValue = updatedNumericValue, waiting = updatedWaiting}
+
       -- Handle collisions
       collisionResults = mapM (uncurry (handleCollision ioOperations)) blocksWithValuesAfterFusion
       valuesAfterCollisionHandling =
