@@ -13,12 +13,16 @@ import Utils
 type IoInputNumberOperation m = m Int
 
 standardIoInputOperation :: IoInputNumberOperation IO
-standardIoInputOperation = getNumber
+standardIoInputOperation = do
+  _ <- putStrLn "Awaiting numeric input"
+  readNumber
 
 type IoInputAsciiOperation m = m Char
 
 standardIoInputAsciiOperation :: IoInputAsciiOperation IO
-standardIoInputAsciiOperation = getChar
+standardIoInputAsciiOperation = do
+  _ <- putStrLn "Awaiting ascii input"
+  readChar
 
 type IoOutputOperation m = String -> m ()
 
@@ -211,5 +215,7 @@ handleCollision _ (Io Error) [value] = return $ Left $ Errored (numericValue val
 -- Values annihilate each other if more than one value is present
 handleCollision _ (Io _) (_ : _ : _) = return $ Right []
 --------------------
--- There are no active blocks, all blocks just manipulate incoming values
+handleCollision io (Unrecognised _) values = handleCollision io (Util Default) values
+--------------------
+-- Default case: there are no active blocks, all blocks just manipulate incoming values
 handleCollision _ _ [] = return $ Right []

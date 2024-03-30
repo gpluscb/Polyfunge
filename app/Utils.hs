@@ -37,10 +37,17 @@ gridIndices xs =
 trim :: String -> String
 trim = dropWhile isSpace . dropWhileEnd isSpace
 
-getNumber :: IO Int
-getNumber = do
-  line <- getLine
-  maybe getNumber return (readMaybe (trim line))
+readNumber :: IO Int
+readNumber = do
+  line <- trim <$> getLine
+  maybe readNumber return (readMaybe line)
+
+readChar :: IO Char
+readChar = do
+  line <- trim <$> getLine
+  case line of
+    [c] -> return c
+    _ -> readChar
 
 push :: a -> [a] -> [a]
 push = flip (++) . (: []) -- Ooooo I'm a wizard

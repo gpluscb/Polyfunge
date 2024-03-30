@@ -49,7 +49,7 @@ orthos DirDown = orthos DirUp
 orthos DirLeft = [DirUp, DirDown]
 orthos DirRight = orthos DirLeft
 
-data Block = Control ControlFlowBlock | BinaryArith BinaryArithBlock | UnaryArith UnaryArithBlock | Util UtilBlock | Io IoBlock
+data Block = Control ControlFlowBlock | BinaryArith BinaryArithBlock | UnaryArith UnaryArithBlock | Util UtilBlock | Io IoBlock | Unrecognised Char
   deriving (Read, Show, Eq)
 
 data ControlFlowBlock = Conveyor Direction | Wait | Jump | VGate | HGate | Test | Not
@@ -119,40 +119,42 @@ associatedChar (Io PrintAscii) = 'P'
 associatedChar (Io Break) = 'b'
 associatedChar (Io Halt) = 'h'
 associatedChar (Io Error) = 'e'
+---------------------------
+associatedChar (Unrecognised c) = c
 
-associatedBlock :: Char -> Maybe Block
-associatedBlock '^' = Just $ Control (Conveyor DirUp)
-associatedBlock 'v' = Just $ Control (Conveyor DirDown)
-associatedBlock '<' = Just $ Control (Conveyor DirLeft)
-associatedBlock '>' = Just $ Control (Conveyor DirRight)
-associatedBlock 'w' = Just $ Control Wait
-associatedBlock '#' = Just $ Control Jump
-associatedBlock '|' = Just $ Control VGate
-associatedBlock '_' = Just $ Control HGate
-associatedBlock '?' = Just $ Control Test
-associatedBlock '!' = Just $ Control Not
+associatedBlock :: Char -> Block
+associatedBlock '^' = Control (Conveyor DirUp)
+associatedBlock 'v' = Control (Conveyor DirDown)
+associatedBlock '<' = Control (Conveyor DirLeft)
+associatedBlock '>' = Control (Conveyor DirRight)
+associatedBlock 'w' = Control Wait
+associatedBlock '#' = Control Jump
+associatedBlock '|' = Control VGate
+associatedBlock '_' = Control HGate
+associatedBlock '?' = Control Test
+associatedBlock '!' = Control Not
 ---------------------------
-associatedBlock '+' = Just $ BinaryArith Add
-associatedBlock '-' = Just $ BinaryArith Sub
-associatedBlock '/' = Just $ BinaryArith Div
-associatedBlock '*' = Just $ BinaryArith Mul
-associatedBlock '%' = Just $ BinaryArith Mod
-associatedBlock 'g' = Just $ BinaryArith Gt
-associatedBlock 'l' = Just $ BinaryArith Lt
+associatedBlock '+' = BinaryArith Add
+associatedBlock '-' = BinaryArith Sub
+associatedBlock '/' = BinaryArith Div
+associatedBlock '*' = BinaryArith Mul
+associatedBlock '%' = BinaryArith Mod
+associatedBlock 'g' = BinaryArith Gt
+associatedBlock 'l' = BinaryArith Lt
 ---------------------------
-associatedBlock 'z' = Just $ UnaryArith Zero
-associatedBlock 'i' = Just $ UnaryArith Inc
-associatedBlock 'd' = Just $ UnaryArith Dec
+associatedBlock 'z' = UnaryArith Zero
+associatedBlock 'i' = UnaryArith Inc
+associatedBlock 'd' = UnaryArith Dec
 ---------------------------
-associatedBlock ' ' = Just $ Util Default
-associatedBlock ':' = Just $ Util Dupe
-associatedBlock 'x' = Just $ Util Destroy
+associatedBlock ' ' = Util Default
+associatedBlock ':' = Util Dupe
+associatedBlock 'x' = Util Destroy
 ---------------------------
-associatedBlock 'N' = Just $ Io InputDecimal
-associatedBlock 'I' = Just $ Io InputAscii
-associatedBlock 'p' = Just $ Io PrintDecimal
-associatedBlock 'P' = Just $ Io PrintAscii
-associatedBlock 'b' = Just $ Io Break
-associatedBlock 'h' = Just $ Io Halt
-associatedBlock 'e' = Just $ Io Error
-associatedBlock _ = Nothing
+associatedBlock 'N' = Io InputDecimal
+associatedBlock 'I' = Io InputAscii
+associatedBlock 'p' = Io PrintDecimal
+associatedBlock 'P' = Io PrintAscii
+associatedBlock 'b' = Io Break
+associatedBlock 'h' = Io Halt
+associatedBlock 'e' = Io Error
+associatedBlock c = Unrecognised c

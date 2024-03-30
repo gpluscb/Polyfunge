@@ -6,8 +6,8 @@ import Data.Char (digitToInt, isDigit, ord)
 import ProgramData
 import Utils
 
-data ParseError = UnrecognisedChar Char | EmptyLiteral
-  deriving (Read, Show, Eq)
+data ParseError = EmptyLiteral
+  deriving (Read, Show, Eq, Enum)
 
 parseProgram :: String -> Either ParseError ProgramState
 parseProgram program =
@@ -79,10 +79,8 @@ parseLineRecursive (col, row) vals blocks (c : rest)
        in parseLineRecursive (succ col, row) updatedValues updatedBlocks rest
   | otherwise =
       let assocBlock = associatedBlock c
-          maybeUpdatedBlocks = flip push blocks <$> assocBlock
-       in case maybeUpdatedBlocks of
-            Just updatedBlocks -> parseLineRecursive (succ col, row) vals updatedBlocks rest
-            Nothing -> Left $ UnrecognisedChar c
+          updatedBlocks = push assocBlock blocks
+       in parseLineRecursive (succ col, row) vals updatedBlocks rest
 
 data ParseMultiDigitsResult = ParseMultiDigitsResult
   { number :: Int,
