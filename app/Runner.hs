@@ -127,6 +127,12 @@ handleCollision _ (Control HGate) values =
           values
         else -- reflect
           Utils.mapIf (isVertical . momentum) (\value -> value {momentum = mirror (momentum value)}) values
+handleCollision _ (Control Test) [value] =
+  -- Keep 0, discard otherwise
+  return $ Right $ filter ((== 0) . numericValue) [value]
+handleCollision _ (Control Not) [value] =
+  -- Discard 0, keep otherwise
+  return $ Right $ filter ((/= 0) . numericValue) [value]
 -- Values annihilate each other in all control blocks (except for gates) if more than one value is present
 handleCollision _ (Control _) (_ : _ : _) = return $ Right []
 --------------------
@@ -161,12 +167,6 @@ handleCollision _ (Util Default) [value] = return $ Right [value]
 handleCollision _ (Util Dupe) [value] =
   return $ Right $ value : map (\ortho -> value {momentum = ortho}) (orthos (momentum value))
 handleCollision _ (Util Destroy) _ = return $ Right []
-handleCollision _ (Util Test) [value] =
-  -- Keep 0, discard otherwise
-  return $ Right $ filter ((== 0) . numericValue) [value]
-handleCollision _ (Util Not) [value] =
-  -- Discard 0, keep otherwise
-  return $ Right $ filter ((/= 0) . numericValue) [value]
 -- Values annihilate each other if more than one value is present
 handleCollision _ (Util _) (_ : _ : _) = return $ Right []
 --------------------

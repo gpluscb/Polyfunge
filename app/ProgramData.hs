@@ -52,17 +52,17 @@ orthos DirRight = orthos DirLeft
 data Block = Control ControlFlowBlock | BinaryArith BinaryArithBlock | UnaryArith UnaryArithBlock | Util UtilBlock | Io IoBlock
   deriving (Read, Show, Eq)
 
-data ControlFlowBlock = Conveyor Direction | Wait | Jump | VGate | HGate
+data ControlFlowBlock = Conveyor Direction | Wait | Jump | VGate | HGate | Test | Not
   deriving (Read, Show, Eq)
 
-data BinaryArithBlock = Add | Sub | Mul | Div | Mod | Gt | Lt
+data BinaryArithBlock = Add | Sub | Div | Mul | Mod | Gt | Lt
   deriving (Read, Show, Eq, Enum)
 
 applyBinaryArith :: BinaryArithBlock -> Int -> Int -> Maybe Int
 applyBinaryArith Add a b = Just $ a + b
 applyBinaryArith Sub a b = Just $ a - b
-applyBinaryArith Mul a b = Just $ a * b
 applyBinaryArith Div a b = if b == 0 then Nothing else Just $ quot a b
+applyBinaryArith Mul a b = Just $ a * b
 applyBinaryArith Mod a b = Just $ mod a b
 applyBinaryArith Gt a b = Just $ if a > b then 0 else 1
 applyBinaryArith Lt a b = Just $ if a < b then 0 else 1
@@ -73,7 +73,7 @@ data UnaryArithBlock = Zero
 applyUnaryArith :: UnaryArithBlock -> Int -> Int
 applyUnaryArith Zero _ = 0
 
-data UtilBlock = Default | Dupe | Destroy | Test | Not
+data UtilBlock = Default | Dupe | Destroy
   deriving (Read, Show, Eq, Enum)
 
 data IoBlock = Input | PrintDecimal | PrintAscii | Break | Halt | Error
@@ -91,11 +91,13 @@ associatedChar (Control Wait) = 'w'
 associatedChar (Control Jump) = '#'
 associatedChar (Control VGate) = '|'
 associatedChar (Control HGate) = '_'
+associatedChar (Control Test) = '?'
+associatedChar (Control Not) = '!'
 ---------------------------
 associatedChar (BinaryArith Add) = '+'
 associatedChar (BinaryArith Sub) = '-'
-associatedChar (BinaryArith Mul) = '*'
 associatedChar (BinaryArith Div) = '/'
+associatedChar (BinaryArith Mul) = '*'
 associatedChar (BinaryArith Mod) = '%'
 associatedChar (BinaryArith Gt) = 'g'
 associatedChar (BinaryArith Lt) = 'l'
@@ -105,8 +107,6 @@ associatedChar (UnaryArith Zero) = 'z'
 associatedChar (Util Default) = ' '
 associatedChar (Util Dupe) = ':'
 associatedChar (Util Destroy) = 'x'
-associatedChar (Util Test) = '?'
-associatedChar (Util Not) = '!'
 ---------------------------
 associatedChar (Io Input) = 'I'
 associatedChar (Io PrintDecimal) = 'p'
@@ -124,11 +124,13 @@ associatedBlock 'w' = Just $ Control Wait
 associatedBlock '#' = Just $ Control Jump
 associatedBlock '|' = Just $ Control VGate
 associatedBlock '_' = Just $ Control HGate
+associatedBlock '?' = Just $ Control Test
+associatedBlock '!' = Just $ Control Not
 ---------------------------
 associatedBlock '+' = Just $ BinaryArith Add
 associatedBlock '-' = Just $ BinaryArith Sub
-associatedBlock '*' = Just $ BinaryArith Mul
 associatedBlock '/' = Just $ BinaryArith Div
+associatedBlock '*' = Just $ BinaryArith Mul
 associatedBlock '%' = Just $ BinaryArith Mod
 associatedBlock 'g' = Just $ BinaryArith Gt
 associatedBlock 'l' = Just $ BinaryArith Lt
@@ -138,8 +140,6 @@ associatedBlock 'z' = Just $ UnaryArith Zero
 associatedBlock ' ' = Just $ Util Default
 associatedBlock ':' = Just $ Util Dupe
 associatedBlock 'x' = Just $ Util Destroy
-associatedBlock '?' = Just $ Util Test
-associatedBlock '!' = Just $ Util Not
 ---------------------------
 associatedBlock 'I' = Just $ Io Input
 associatedBlock 'p' = Just $ Io PrintDecimal
