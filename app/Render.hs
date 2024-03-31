@@ -23,9 +23,7 @@ renderState state =
   where
     renderLine :: [(Block, [Value])] -> String
     renderLine =
-      map
-        ( \(block, valuesOnBlock) ->
-            case valuesOnBlock of
-              [] -> associatedChar block
-              value : _ -> fromMaybe '0' $ listToMaybe $ show $ numericValue value
-        )
+      map $ \(block, valuesOnBlock) ->
+        case valuesOnBlock of
+          [] -> associatedChar block
+          value : _ -> fromMaybe '0' $ listToMaybe $ show $ numericValue value

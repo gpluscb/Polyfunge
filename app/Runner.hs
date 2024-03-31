@@ -144,7 +144,6 @@ tick stepping ioOperations state =
                 let updatedNumericValue = sum $ Data.List.NonEmpty.map numericValue values
                     updatedWaiting = any waiting values
                  in (Data.List.NonEmpty.head values) {numericValue = updatedNumericValue, waiting = updatedWaiting}
-
       -- Handle collisions
       collisionResults = mapM (uncurry (handleCollision stepping ioOperations)) blocksWithValuesAfterFusion
       valuesAfterCollisionHandling =
