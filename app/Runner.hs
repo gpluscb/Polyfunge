@@ -39,7 +39,7 @@ standardIoDebuggerOperation = return Continue
 
 debugIoDebuggerOperation :: IoDebuggerOperation IO
 debugIoDebuggerOperation = do
-  _ <- putStrLn "Breakpoint hit. Press enter or s to step once, c to continue, or a to abort"
+  _ <- putStrLn "Program paused. Press enter or s to step once, c to continue, or a to abort"
   getDebuggerAction
   where
     getDebuggerAction =
@@ -90,13 +90,13 @@ debugIoOperations microsecs =
     }
 
 runNormal :: ProgramState -> IO EndOfProgram
-runNormal = fmap fst . run standardIoOperations
+runNormal = fmap fst . run Continue standardIoOperations
 
 runDebug :: Int -> ProgramState -> IO EndOfProgram
-runDebug microsecs = fmap fst . run (debugIoOperations microsecs)
+runDebug microsecs = fmap fst . run Step (debugIoOperations microsecs)
 
-run :: (Monad m) => IoOperations m -> ProgramState -> m (EndOfProgram, ProgramState)
-run = runRecursive 0 Continue
+run :: (Monad m) => ContinueAction -> IoOperations m -> ProgramState -> m (EndOfProgram, ProgramState)
+run = runRecursive 0
 
 runRecursive :: (Monad m) => Int -> ContinueAction -> IoOperations m -> ProgramState -> m (EndOfProgram, ProgramState)
 runRecursive tickCount action ioOperations state =
