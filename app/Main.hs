@@ -2,20 +2,28 @@
 
 module Main where
 
+import Data.Maybe (fromMaybe)
 import qualified Parse
 import qualified Runner
 import System.Environment (getArgs)
+import System.Exit (die)
 
 main :: IO ()
-main =
-  do
-    fileName <- head <$> getArgs
-    program <- readFile fileName
-    x <-
-      mapM
-        (Runner.runDebug 100_000)
-        (Parse.parseProgram program)
-    print x
+main = mainWithArgs =<< getArgs
+
+mainWithArgs :: [String] -> IO ()
+mainWithArgs [path] = execute path Nothing
+mainWithArgs ["--debug", path] = execute path (Just 50_000)
+mainWithArgs _ = die "Usage: exec [--debug] <program file>"
+
+execute :: FilePath -> Maybe Int -> IO ()
+execute path debugMicros = do
+  program <- readFile path
+  x <-
+    mapM
+      (fromMaybe Runner.runNormal $ Runner.runDebug <$> debugMicros)
+      (Parse.parseProgram program)
+  print x
 
 fibExample :: String
 fibExample =
