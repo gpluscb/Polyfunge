@@ -20,9 +20,9 @@ execute :: FilePath -> Maybe Int -> IO ()
 execute path debugMicros = do
   program <- readFile path
   x <-
-    mapM
-      (fromMaybe Runner.runNormal $ Runner.runDebug <$> debugMicros)
-      (Parse.parseProgram program)
+    sequence $
+      (fromMaybe Runner.runNormal (Runner.runDebug <$> debugMicros))
+        <$> (Parse.parseProgram program)
   print x
 
 fibExample :: String
