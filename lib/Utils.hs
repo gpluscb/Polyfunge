@@ -7,6 +7,14 @@ import Text.Read (readMaybe)
 mapIf :: (a -> Bool) -> (a -> a) -> [a] -> [a]
 mapIf predicate f = map $ \x -> if predicate x then f x else x
 
+mapEither :: (a -> c) -> (b -> d) -> Either a b -> Either c d
+mapEither fl _ (Left a) = Left $ fl a
+mapEither _ fr (Right b) = Right $ fr b
+
+mapLeft :: (a -> c) -> Either a b -> Either c b
+mapLeft f (Left a) = Left $ f a
+mapLeft _ (Right b) = Right b
+
 gridDimensions :: [[a]] -> (Int, Int)
 gridDimensions xs =
   let numRows = length xs

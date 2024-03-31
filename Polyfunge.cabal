@@ -85,7 +85,7 @@ executable polyfunge
 test-suite tests
     import:           warnings
     type:             exitcode-stdio-1.0
-    main-is:          Tests.hs
-    build-depends:    base ^>=4.19.1.0, HUnit ^>=1.6.2.0, Polyfunge
+    main-is:          Main.hs
+    build-depends:    base ^>=4.19.1.0, HUnit ^>=1.6.2.0, transformers ^>= 0.6.1.1, directory ^>= 1.3.8.3, Polyfunge
     hs-source-dirs:   tests
     default-language: Haskell2010
