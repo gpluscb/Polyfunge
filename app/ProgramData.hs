@@ -100,7 +100,7 @@ data UtilBlock = Default | Dupe | Destroy
 data IoBlock = InputDecimal | InputAscii | PrintDecimal | PrintAscii | Break | Halt | Error
   deriving (Read, Show, Eq, Enum)
 
-data EndOfProgram = Died | Halted Int | Errored Int
+data EndOfProgram = Died | Aborted | Halted Int | Errored Int
   deriving (Read, Show, Eq)
 
 associatedChar :: Block -> Char
