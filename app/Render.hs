@@ -1,6 +1,7 @@
 module Render where
 
 import Data.List (intercalate)
+import Data.Maybe (fromMaybe, listToMaybe)
 import ProgramData
 
 renderTick :: Int -> ProgramState -> String
@@ -26,5 +27,5 @@ renderState state =
         ( \(block, valuesOnBlock) ->
             case valuesOnBlock of
               [] -> associatedChar block
-              value : _ -> head $ show $ numericValue value
+              value : _ -> fromMaybe '0' $ listToMaybe $ show $ numericValue value
         )
