@@ -125,6 +125,7 @@ parseTestFileHeader _ _ = Left "Test file: Not enough header lines"
 
 parseInputBufferLine :: String -> Either String [IoElement]
 parseInputBufferLine ('I' : ' ' : rest) = sequence $ map parseIoElement $ words rest
+parseInputBufferLine "I" = Right []
 parseInputBufferLine _ = Left "Test file: input buffer line is invalid"
 
 parseIoElement :: String -> Either String IoElement
@@ -136,6 +137,7 @@ parseIoElement _ = Left "Test file: Input buffer must contain valid polyfunge li
 
 parseExpectedOutputLine :: String -> Either String [String]
 parseExpectedOutputLine ('O' : ' ' : rest) = Right $ words rest
+parseExpectedOutputLine "O" = Right []
 parseExpectedOutputLine _ = Left "Test file: expected output line is invalid"
 
 parseExpectedEopLine :: String -> Either String EndOfProgram
