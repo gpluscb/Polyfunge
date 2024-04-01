@@ -113,7 +113,7 @@ parseTestFile str =
   let strLines = lines str
       (headerLines, programLines) = splitAt 4 strLines
       programStr = unlines programLines
-      parseProgramResult = mapLeft ((++ "Test file: Program parse error: ") . show) $ parseProgram programStr
+      parseProgramResult = mapLeft (("Test file: Program parse error: " ++) . show) $ parseProgram programStr
       testFile = parseTestFileHeader headerLines =<< parseProgramResult
    in testFile
 
