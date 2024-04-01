@@ -1,7 +1,12 @@
 module TestUtils where
 
 import System.Directory (doesFileExist, listDirectory)
+import Test.HUnit (assertFailure)
 import Utils (concatMapM)
+
+eitherAssertion :: (Show a) => Either a b -> IO ()
+eitherAssertion (Left e) = assertFailure $ show e
+eitherAssertion _ = return ()
 
 readFilesInDirRecursive :: FilePath -> IO [(FilePath, String)]
 readFilesInDirRecursive dirPath = do

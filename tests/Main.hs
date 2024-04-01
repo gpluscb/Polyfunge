@@ -7,8 +7,8 @@ import Data.Char (digitToInt)
 import Parse (ParseMultiDigitsResult (number), parseLargeNumber, parseProgram)
 import ProgramData (EndOfProgram (Died, Errored, Halted), ProgramState)
 import Runner (ContinueAction (Continue), IoOperations (IoOperations, debugger, inputAscii, inputNumber, output, render), run)
-import Test.HUnit (Test (TestCase, TestLabel, TestList), assertFailure, runTestTTAndExit)
-import TestUtils (readFilesInDirRecursive)
+import Test.HUnit (Test (TestCase, TestLabel, TestList), runTestTTAndExit)
+import TestUtils
 import Utils (mapEither, mapLeft)
 
 main :: IO ()
@@ -20,10 +20,6 @@ testsForDirectory :: FilePath -> IO Test
 testsForDirectory dirPath = do
   ranTests <- runTestCases dirPath
   return $ TestList $ map (\(path, result) -> TestLabel path $ TestCase (eitherAssertion result)) ranTests
-
-eitherAssertion :: (Show a) => Either a b -> IO ()
-eitherAssertion (Left e) = assertFailure $ show e
-eitherAssertion _ = return ()
 
 data TestError
   = Parse String
