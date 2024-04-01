@@ -142,7 +142,7 @@ tick stepping ioOperations state =
             map $
               \values ->
                 let updatedNumericValue = sum $ Data.List.NonEmpty.map numericValue values
-                    updatedWaiting = any waiting values
+                    updatedWaiting = all waiting values -- If one has not already waited, result should wait again
                  in (Data.List.NonEmpty.head values) {numericValue = updatedNumericValue, waiting = updatedWaiting}
       -- Handle collisions
       collisionResults = mapM (uncurry (handleCollision stepping ioOperations)) blocksWithValuesAfterFusion
