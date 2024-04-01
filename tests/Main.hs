@@ -2,15 +2,14 @@
 
 module Main where
 
-import Control.Monad (filterM)
 import Control.Monad.Trans.State
 import Data.Char (digitToInt)
 import Parse (ParseMultiDigitsResult (number), parseLargeNumber, parseProgram)
 import ProgramData (EndOfProgram (Died, Halted), ProgramState)
 import Runner (ContinueAction (Continue), IoOperations (IoOperations, debugger, inputAscii, inputNumber, output, render), run)
-import System.Directory (doesFileExist, listDirectory)
 import qualified System.Exit as Exit
 import Test.HUnit (Counts (failures), Test (TestCase, TestLabel, TestList), assertFailure, runTestTT)
+import TestUtils (readFilesInDirRecursive)
 import Utils (mapEither, mapLeft)
 
 main :: IO ()
@@ -94,15 +93,7 @@ runTestFile TestFile {inputBuffer, expectedOutput, expectedExit, program} =
 
 getTestCases :: FilePath -> IO [(FilePath, Either String TestFile)]
 getTestCases dirPath = do
-  directoryContents <- map (dirPath ++) <$> listDirectory dirPath
-  filePaths <- filterM doesFileExist directoryContents
-  fileContents <-
-    mapM
-      ( \path -> do
-          contents <- readFile path
-          return (path, contents)
-      )
-      filePaths
+  fileContents <- readFilesInDirRecursive dirPath
   return $
     map
       (\(path, contents) -> (path, parseTestFile contents))

@@ -15,6 +15,9 @@ mapLeft :: (a -> c) -> Either a b -> Either c b
 mapLeft f (Left a) = Left $ f a
 mapLeft _ (Right b) = Right b
 
+concatMapM :: (Monad m, Traversable t) => (a -> m [b]) -> t a -> m [b]
+concatMapM f = fmap concat . mapM f
+
 gridDimensions :: [[a]] -> (Int, Int)
 gridDimensions xs =
   let numRows = length xs
