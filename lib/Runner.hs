@@ -217,7 +217,8 @@ handleCollision _ _ (Control (Gate gateOrientation)) [value] =
 -- If two values align with the gate, two values do not align with the gate, or three or more values are present
 -- they will be annihilated in default case
 handleCollision x y z@(Control (Gate gateOrientation)) [valueA, valueB]
-  | orientationFromDirection (momentum valueB) == gateOrientation =
+  | orientationFromDirection (momentum valueB) == gateOrientation
+      && orientationFromDirection (momentum valueA) /= gateOrientation =
       handleCollision x y z [valueB, valueA] -- Reorder such that first value aligns with gate
   | orientationFromDirection (momentum valueA) == gateOrientation
       && orientationFromDirection (momentum valueB) /= gateOrientation =
