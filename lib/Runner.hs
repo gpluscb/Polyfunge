@@ -206,29 +206,28 @@ handleCollision _ _ (Control Wait) [value] =
 -- Stepping onto the jump block does not do anything, only leaving it does
 handleCollision _ _ (Control Jump) [value] =
   return $ Right ([value], Continue)
-handleCollision _ _ (Control VGate) values =
+handleCollision _ _ (Control (Gate gateOrientation)) [value] =
   return $
-    Right
-      ( if any (\value -> numericValue value == 0 && isVertical (momentum value)) values
-          then -- do nothing
-            values
-          else -- reflect
-            Utils.mapIf (isHorizontal . momentum) (\value -> value {momentum = mirror (momentum value)}) values,
+    Right $
+      ( if orientationFromDirection (momentum value) == gateOrientation
+          then [value] -- Values in the direction of the gate get to pass
+          else [value {momentum = mirror (momentum value)}], -- Others reflect
         Continue
       )
-handleCollision _ _ (Control HGate) values =
-  return $
-    Right
-      ( if any (\value -> numericValue value == 0 && isHorizontal (momentum value)) values
-          then -- do nothing
-            values
-          else -- reflect
-            Utils.mapIf
-              (isVertical . momentum)
-              (\value -> value {momentum = mirror (momentum value)})
-              values,
-        Continue
-      )
+-- If two values align with the gate, two values do not align with the gate, or three or more values are present
+-- they will be annihilated in default case
+handleCollision x y z@(Control (Gate gateOrientation)) [valueA, valueB]
+  | orientationFromDirection (momentum valueB) == gateOrientation =
+      handleCollision x y z [valueB, valueA] -- Reorder such that first value aligns with gate
+  | orientationFromDirection (momentum valueA) == gateOrientation
+      && orientationFromDirection (momentum valueB) /= gateOrientation =
+      return $
+        Right $
+          ( if numericValue valueA == 0
+              then [valueA, valueB] -- 0 allows passing of both
+              else [valueA, valueB {momentum = mirror (momentum valueB)}], -- Everything else mirrors
+            Continue
+          )
 handleCollision _ _ (Control Test) [value] =
   -- Keep 0, discard otherwise
   return $ Right (filter ((== 0) . numericValue) [value], Continue)

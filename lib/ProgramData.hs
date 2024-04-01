@@ -68,10 +68,23 @@ orthos DirDown = orthos DirUp
 orthos DirLeft = [DirUp, DirDown]
 orthos DirRight = orthos DirLeft
 
+data Orientation = Horizontal | Vertical
+  deriving (Read, Show, Ord, Eq, Enum)
+
+orientationFromDirection :: Direction -> Orientation
+orientationFromDirection DirUp = Vertical
+orientationFromDirection DirDown = Vertical
+orientationFromDirection DirLeft = Horizontal
+orientationFromDirection DirRight = Horizontal
+
+rotate :: Orientation -> Orientation
+rotate Horizontal = Vertical
+rotate Vertical = Horizontal
+
 data Block = Control ControlFlowBlock | BinaryArith BinaryArithBlock | UnaryArith UnaryArithBlock | Util UtilBlock | Io IoBlock | Unrecognised Char
   deriving (Read, Show, Eq)
 
-data ControlFlowBlock = Conveyor Direction | Wait | Jump | VGate | HGate | Test | Not
+data ControlFlowBlock = Conveyor Direction | Wait | Jump | Gate Orientation | Test | Not
   deriving (Read, Show, Eq)
 
 data BinaryArithBlock = Add | Sub | Div | Mul | Mod | Gt | Lt
@@ -110,8 +123,8 @@ associatedChar (Control (Conveyor DirLeft)) = '<'
 associatedChar (Control (Conveyor DirRight)) = '>'
 associatedChar (Control Wait) = 'w'
 associatedChar (Control Jump) = '#'
-associatedChar (Control VGate) = '|'
-associatedChar (Control HGate) = '_'
+associatedChar (Control (Gate Vertical)) = '|'
+associatedChar (Control (Gate Horizontal)) = '_'
 associatedChar (Control Test) = '?'
 associatedChar (Control Not) = '!'
 ---------------------------
@@ -148,8 +161,8 @@ associatedBlock '<' = Control $ Conveyor DirLeft
 associatedBlock '>' = Control $ Conveyor DirRight
 associatedBlock 'w' = Control Wait
 associatedBlock '#' = Control Jump
-associatedBlock '|' = Control VGate
-associatedBlock '_' = Control HGate
+associatedBlock '|' = Control $ Gate Vertical
+associatedBlock '_' = Control $ Gate Horizontal
 associatedBlock '?' = Control Test
 associatedBlock '!' = Control Not
 ---------------------------
