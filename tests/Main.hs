@@ -5,7 +5,7 @@ module Main where
 import Control.Monad.Trans.State
 import Data.Char (digitToInt)
 import Parse (ParseMultiDigitsResult (number), parseLargeNumber, parseProgram)
-import ProgramData (EndOfProgram (Died, Halted), ProgramState)
+import ProgramData (EndOfProgram (Died, Errored, Halted), ProgramState)
 import Runner (ContinueAction (Continue), IoOperations (IoOperations, debugger, inputAscii, inputNumber, output, render), run)
 import qualified System.Exit as Exit
 import Test.HUnit (Counts (failures), Test (TestCase, TestLabel, TestList), assertFailure, runTestTT)
@@ -145,7 +145,7 @@ parseExpectedEopLine "D" = Right Died
 parseExpectedEopLine ('H' : ' ' : rest) =
   mapEither (\_ -> "Test file: expected halting with not a number") (Halted . number) $ parseLargeNumber rest
 parseExpectedEopLine ('E' : ' ' : rest) =
-  mapEither (\_ -> "Test file: expected error with not a number") (Halted . number) $ parseLargeNumber rest
+  mapEither (\_ -> "Test file: expected error with not a number") (Errored . number) $ parseLargeNumber rest
 parseExpectedEopLine _ = Left "Test file: expected eop line is invalid"
 
 parseFenceLine :: String -> Either String ()
