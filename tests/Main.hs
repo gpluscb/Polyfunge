@@ -15,7 +15,7 @@ import Utils (mapEither, mapLeft)
 
 main :: IO ()
 main = do
-  tests <- testsForDirectory "/home/marrue/HaskellProjects/Polyfunge/testcases/"
+  tests <- testsForDirectory "./testcases/"
   result <- runTestTT tests
   if failures result > 0
     then Exit.exitFailure
