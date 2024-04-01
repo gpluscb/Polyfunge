@@ -7,18 +7,14 @@ import Data.Char (digitToInt)
 import Parse (ParseMultiDigitsResult (number), parseLargeNumber, parseProgram)
 import ProgramData (EndOfProgram (Died, Errored, Halted), ProgramState)
 import Runner (ContinueAction (Continue), IoOperations (IoOperations, debugger, inputAscii, inputNumber, output, render), run)
-import qualified System.Exit as Exit
-import Test.HUnit (Counts (failures), Test (TestCase, TestLabel, TestList), assertFailure, runTestTT)
+import Test.HUnit (Test (TestCase, TestLabel, TestList), assertFailure, runTestTTAndExit)
 import TestUtils (readFilesInDirRecursive)
 import Utils (mapEither, mapLeft)
 
 main :: IO ()
 main = do
   tests <- testsForDirectory "./testcases/"
-  result <- runTestTT tests
-  if failures result > 0
-    then Exit.exitFailure
-    else Exit.exitSuccess
+  runTestTTAndExit tests
 
 testsForDirectory :: FilePath -> IO Test
 testsForDirectory dirPath = do
