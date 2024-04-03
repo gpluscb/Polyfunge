@@ -84,7 +84,7 @@ rotate Vertical = Horizontal
 data Block = Control ControlFlowBlock | BinaryArith BinaryArithBlock | UnaryArith UnaryArithBlock | Util UtilBlock | Io IoBlock | Unrecognised Char
   deriving (Read, Show, Eq)
 
-data ControlFlowBlock = Conveyor Direction | Wait | Jump | Gate Orientation | Test | Not
+data ControlFlowBlock = Conveyor Direction | Spinner | Wait | Jump | Gate Orientation | Test | Not
   deriving (Read, Show, Eq)
 
 data BinaryArithBlock = Add | Sub | Div | Mul | Mod | Gt | Lt
@@ -121,6 +121,7 @@ associatedChar (Control (Conveyor DirUp)) = '^'
 associatedChar (Control (Conveyor DirDown)) = 'v'
 associatedChar (Control (Conveyor DirLeft)) = '<'
 associatedChar (Control (Conveyor DirRight)) = '>'
+associatedChar (Control Spinner) = '@'
 associatedChar (Control Wait) = 'w'
 associatedChar (Control Jump) = '#'
 associatedChar (Control (Gate Vertical)) = '|'
@@ -159,6 +160,7 @@ associatedBlock '^' = Control $ Conveyor DirUp
 associatedBlock 'v' = Control $ Conveyor DirDown
 associatedBlock '<' = Control $ Conveyor DirLeft
 associatedBlock '>' = Control $ Conveyor DirRight
+associatedBlock '@' = Control Spinner
 associatedBlock 'w' = Control Wait
 associatedBlock '#' = Control Jump
 associatedBlock '|' = Control $ Gate Vertical

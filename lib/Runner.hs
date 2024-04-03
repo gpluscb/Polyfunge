@@ -9,6 +9,7 @@ import Data.Char (chr, ord)
 import qualified Data.List.NonEmpty
 import ProgramData
 import qualified Render
+import System.Random (randomRIO)
 import Utils
 
 type IoInputNumberOperation m = m Int
@@ -24,6 +25,18 @@ standardIoInputAsciiOperation :: IoInputAsciiOperation IO
 standardIoInputAsciiOperation = do
   _ <- putStrLn "Awaiting ascii input"
   readChar
+
+type IoRandomInputOperation m = m Direction
+
+standardIoRandomInputOperation :: IoRandomInputOperation IO
+standardIoRandomInputOperation = do
+  num <- randomRIO (0, 3) :: IO Int
+  return $ case num of
+    0 -> DirUp
+    1 -> DirDown
+    2 -> DirLeft
+    3 -> DirRight
+    _ -> error "Unreachable"
 
 type IoOutputOperation m = String -> m ()
 
@@ -64,6 +77,7 @@ debugIoRenderOperation microsecs tickCount state = do
 data IoOperations m = IoOperations
   { inputNumber :: IoInputNumberOperation m,
     inputAscii :: IoInputAsciiOperation m,
+    inputRandom :: IoRandomInputOperation m,
     output :: IoOutputOperation m,
     debugger :: IoDebuggerOperation m,
     render :: IoRenderOperation m
@@ -74,6 +88,7 @@ standardIoOperations =
   IoOperations
     { inputNumber = standardIoInputOperation,
       inputAscii = standardIoInputAsciiOperation,
+      inputRandom = standardIoRandomInputOperation,
       output = standardIoOutputOperation,
       debugger = standardIoDebuggerOperation,
       render = standardIoRenderOperation
@@ -84,6 +99,7 @@ debugIoOperations microsecs =
   IoOperations
     { inputNumber = standardIoInputOperation,
       inputAscii = standardIoInputAsciiOperation,
+      inputRandom = standardIoRandomInputOperation,
       output = standardIoOutputOperation,
       debugger = debugIoDebuggerOperation,
       render = debugIoRenderOperation microsecs
@@ -201,6 +217,9 @@ handleCollision :: (Monad m) => Bool -> IoOperations m -> Block -> [Value] -> m 
 --------------------
 handleCollision _ _ (Control (Conveyor conveyorDir)) [value] =
   return $ Right ([value {momentum = conveyorDir}], Continue)
+handleCollision _ IoOperations {inputRandom} (Control Spinner) [value] = do
+  newMomentum <- inputRandom
+  return $ Right ([value {momentum = newMomentum}], Continue)
 handleCollision _ _ (Control Wait) [value] =
   return $ Right ([value {waiting = not (waiting value)}], Continue)
 -- Stepping onto the jump block does not do anything, only leaving it does

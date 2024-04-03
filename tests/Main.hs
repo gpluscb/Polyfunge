@@ -3,10 +3,10 @@
 module Main where
 
 import Control.Monad.Trans.State
-import Data.Char (digitToInt)
+import Data.Char (digitToInt, isNumber)
 import Parse (ParseMultiDigitsResult (number), parseLargeNumber, parseProgram)
-import ProgramData (EndOfProgram (Died, Errored, Halted), ProgramState)
-import Runner (ContinueAction (Continue), IoOperations (IoOperations, debugger, inputAscii, inputNumber, output, render), run)
+import ProgramData (Direction (DirDown, DirLeft, DirRight, DirUp), EndOfProgram (Died, Errored, Halted), ProgramState)
+import Runner (ContinueAction (Continue), IoOperations (IoOperations, debugger, inputAscii, inputNumber, inputRandom, output, render), run)
 import Test.HUnit (Test (TestCase, TestLabel, TestList), runTestTTAndExit)
 import TestUtils
 import Utils (mapEither, mapLeft)
@@ -26,12 +26,11 @@ data TestError
   | EndOfProgramMismatch {actualEop :: EndOfProgram, expectedEop :: EndOfProgram}
   | MoreInputsThanExpected
   | FewerInputsThanExpected {remaining :: [IoElement]}
-  | NumInputWhenCharExpected
-  | CharInputWhenNumExpected
+  | DifferentInputTypeThanExpected
   | OutputMismatch {actualOut :: [String], expectedOut :: [String]}
   deriving (Read, Show, Eq)
 
-data IoElement = Int Int | Char Char
+data IoElement = Int Int | Char Char | Direction Direction
   deriving (Read, Show, Eq)
 
 data IoState = IoState
@@ -121,11 +120,15 @@ parseInputBufferLine "I" = Right []
 parseInputBufferLine _ = Left "Test file: input buffer line is invalid"
 
 parseIoElement :: String -> Either String IoElement
-parseIoElement [n] = Right $ Int $ digitToInt n
+parseIoElement [n] | isNumber n = Right $ Int $ digitToInt n
 parseIoElement ('(' : n) =
   mapEither (\_ -> "Test file: Input buffer has invalid number literal") (Int . number) $ parseLargeNumber n
 parseIoElement ['\'', c] = Right $ Char c
-parseIoElement _ = Left "Test file: Input buffer must contain valid polyfunge literals"
+parseIoElement ['^'] = Right $ Direction DirUp
+parseIoElement ['v'] = Right $ Direction DirDown
+parseIoElement ['<'] = Right $ Direction DirLeft
+parseIoElement ['>'] = Right $ Direction DirRight
+parseIoElement _ = Left "Test file: Input buffer must contain valid polyfunge literals or conveyor directions"
 
 parseExpectedOutputLine :: String -> Either String [String]
 parseExpectedOutputLine ('O' : ' ' : rest) = Right $ words rest
@@ -151,6 +154,7 @@ testIoOperations =
   IoOperations
     { inputNumber = state $ tryApplyTransformer inputNumberTransformer 0 (),
       inputAscii = state $ tryApplyTransformer inputAsciiTransformer ' ' (),
+      inputRandom = state $ tryApplyTransformer inputRandomTransformer DirDown (),
       output = state . tryApplyTransformer outputTransformer (),
       debugger = state $ tryApplyTransformer returnDefaultTransformer Continue (),
       render = curry $ state . tryApplyTransformer returnDefaultTransformer ()
@@ -163,19 +167,27 @@ testIoOperations =
 
     inputNumberTransformer :: StateTransformer () Int
     inputNumberTransformer default' () IoState {remainingInput = []} = (default', Left MoreInputsThanExpected)
-    inputNumberTransformer default' () IoState {remainingInput = (Char _) : _} = (default', Left CharInputWhenNumExpected)
     inputNumberTransformer _ () prevState@IoState {remainingInput = (Int n) : rest} =
       ( n,
         Right prevState {remainingInput = rest}
       )
+    inputNumberTransformer default' () IoState {remainingInput = _ : _} = (default', Left DifferentInputTypeThanExpected)
 
     inputAsciiTransformer :: StateTransformer () Char
     inputAsciiTransformer default' () IoState {remainingInput = []} = (default', Left MoreInputsThanExpected)
-    inputAsciiTransformer default' () IoState {remainingInput = (Int _) : _} = (default', Left NumInputWhenCharExpected)
     inputAsciiTransformer _ () prevState@IoState {remainingInput = (Char c) : rest} =
       ( c,
         Right prevState {remainingInput = rest}
       )
+    inputAsciiTransformer default' () IoState {remainingInput = _ : _} = (default', Left DifferentInputTypeThanExpected)
+
+    inputRandomTransformer :: StateTransformer () Direction
+    inputRandomTransformer default' () IoState {remainingInput = []} = (default', Left MoreInputsThanExpected)
+    inputRandomTransformer _ () prevState@IoState {remainingInput = (Direction d) : rest} =
+      ( d,
+        Right prevState {remainingInput = rest}
+      )
+    inputRandomTransformer default' () IoState {remainingInput = _ : _} = (default', Left DifferentInputTypeThanExpected)
 
     outputTransformer :: StateTransformer String ()
     outputTransformer () input prevState@IoState {collectedOutput} =
