@@ -6,7 +6,7 @@ import Control.Monad.Trans.State
 import Data.Char (digitToInt, isNumber)
 import Parse (ParseMultiDigitsResult (number), parseLargeNumber, parseProgram)
 import ProgramData (Direction (DirDown, DirLeft, DirRight, DirUp), EndOfProgram (Died, Errored, Halted), ProgramState)
-import Runner (ContinueAction (Continue), IoOperations (IoOperations, debugger, inputAscii, inputNumber, inputRandom, output, render), run)
+import Runner (ContinueAction (Continue), CustomOperations (CustomOperations, inputAscii, inputNumber, inputRandom, inspectTick, output), TickInfo, run)
 import Test.HUnit (Test (TestCase, TestLabel, TestList), runTestTTAndExit)
 import TestUtils
 import Utils (mapEither, mapLeft)
@@ -55,7 +55,7 @@ runTestCases dirPath = do
 
 runTestFile :: TestFile -> Either TestError ()
 runTestFile TestFile {inputBuffer, expectedOutput, expectedExit, program} =
-  let result = run Continue testIoOperations program
+  let result = run program testOperations
       initialIoState = IoState {remainingInput = inputBuffer, collectedOutput = []}
       ((endOfProgram, _), stateResult) = runState result $ Right initialIoState
    in do
@@ -149,15 +149,14 @@ parseFenceLine _ = Left "Test file: fence line is invalid"
 
 type StateTransformer i o = o -> i -> IoState -> (o, Either TestError IoState) -- Only used in where clause in testIoOperations
 
-testIoOperations :: IoOperations (State (Either TestError IoState))
-testIoOperations =
-  IoOperations
+testOperations :: CustomOperations (State (Either TestError IoState))
+testOperations =
+  CustomOperations
     { inputNumber = state $ tryApplyTransformer inputNumberTransformer 0 (),
       inputAscii = state $ tryApplyTransformer inputAsciiTransformer ' ' (),
       inputRandom = state $ tryApplyTransformer inputRandomTransformer DirDown (),
       output = state . tryApplyTransformer outputTransformer (),
-      debugger = state $ tryApplyTransformer returnDefaultTransformer Continue (),
-      render = curry $ state . tryApplyTransformer returnDefaultTransformer ()
+      inspectTick = state . tryApplyTransformer inspectTickTransformer Continue
     }
   where
     tryApplyTransformer :: StateTransformer i o -> o -> i -> Either TestError IoState -> (o, Either TestError IoState)
@@ -195,8 +194,8 @@ testIoOperations =
         Right prevState {collectedOutput = collectedOutput ++ [input]}
       )
 
-    returnDefaultTransformer :: StateTransformer i o
-    returnDefaultTransformer default' _ prevState =
+    inspectTickTransformer :: StateTransformer TickInfo ContinueAction
+    inspectTickTransformer default' _ prevState =
       ( default',
         Right prevState
       )
