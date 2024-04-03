@@ -1,7 +1,5 @@
 module Utils where
 
-import Data.Char (isSpace)
-import Data.List (dropWhileEnd)
 import Text.Read (readMaybe)
 
 mapIf :: (a -> Bool) -> (a -> a) -> [a] -> [a]
@@ -45,17 +43,14 @@ gridIndices xs =
       values = concatMap (\(rowIdx, row) -> zipWith (\colIdx x -> (colIdx, rowIdx, x)) [0 ..] row) rows
    in values
 
-trim :: String -> String
-trim = dropWhile isSpace . dropWhileEnd isSpace
-
 readNumber :: IO Int
 readNumber = do
-  line <- trim <$> getLine
+  line <- getLine
   maybe readNumber return (readMaybe line)
 
 readChar :: IO Char
 readChar = do
-  line <- trim <$> getLine
+  line <- getLine
   case line of
     [c] -> return c
     _ -> readChar

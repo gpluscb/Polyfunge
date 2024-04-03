@@ -5,7 +5,7 @@ module Runner where
 
 import Control.Concurrent (threadDelay)
 import Control.Monad.Trans.Class (lift)
-import Control.Monad.Trans.State (StateT, evalStateT, get, modify)
+import Control.Monad.Trans.State (StateT, evalStateT, get, modify, state)
 import qualified Data.Bifunctor
 import Data.Char (chr, ord)
 import qualified Data.List.NonEmpty
@@ -16,7 +16,7 @@ import Utils
 
 data TickInfo = TickInfo
   { debuggerTrigger :: Bool,
-    state :: ProgramState
+    programState :: ProgramState
   }
 
 type InputNumberOperation m = m Int
@@ -66,11 +66,11 @@ initialDebuggerState :: DebuggerState
 initialDebuggerState = DebuggerState {tickCount = 0, stepping = True}
 
 debugInspectTickOperation :: Int -> InspectTickOperation (StateT DebuggerState IO)
-debugInspectTickOperation microsecs TickInfo {debuggerTrigger, state} = do
+debugInspectTickOperation microsecs TickInfo {debuggerTrigger, programState} = do
   _ <- lift $ threadDelay microsecs
   DebuggerState {tickCount, stepping} <- get
   _ <- incrTickCount
-  _ <- lift $ putStrLn $ Render.renderTick tickCount state
+  _ <- lift $ putStrLn $ Render.renderTick tickCount programState
   if stepping || debuggerTrigger
     then do
       _ <- lift $ putStrLn "Program paused. Press enter or s to step once, c to continue, or a to abort"
@@ -85,15 +85,11 @@ debugInspectTickOperation microsecs TickInfo {debuggerTrigger, state} = do
         "a" -> return Abort
         c | c `elem` ["s", ""] -> startStepping
         _ -> do
-          _ <- lift (putStrLn "That didn't work, try again")
+          _ <- lift $ putStrLn "That didn't work, try again"
           getAndApplyDebuggerAction
-    incrTickCount = modify (\debuggerState -> debuggerState {tickCount = succ $ tickCount debuggerState})
-    startStepping = do
-      _ <- modify (\debuggerState -> debuggerState {stepping = True})
-      return Continue
-    startContinuing = do
-      _ <- modify (\debuggerState -> debuggerState {stepping = False})
-      return Continue
+    incrTickCount = modify $ \debuggerState -> debuggerState {tickCount = succ $ tickCount debuggerState}
+    startStepping = state $ \debuggerState -> (Continue, debuggerState {stepping = True})
+    startContinuing = state $ \debuggerState -> (Continue, debuggerState {stepping = False})
 
 data CustomOperations m = CustomOperations
   { inputNumber :: InputNumberOperation m,
@@ -124,13 +120,13 @@ debugOperations microsecs =
     }
 
 runNormal :: ProgramState -> IO EndOfProgram
-runNormal state = fst <$> run state standardOperations
+runNormal programState = fst <$> run programState standardOperations
 
 runDebug :: Int -> ProgramState -> IO EndOfProgram
-runDebug microsecs state = fst <$> evalStateT (run state (debugOperations microsecs)) initialDebuggerState
+runDebug microsecs programState = fst <$> evalStateT (run programState (debugOperations microsecs)) initialDebuggerState
 
 run :: (Monad m) => ProgramState -> CustomOperations m -> m (EndOfProgram, TickInfo)
-run state = runRecursive TickInfo {debuggerTrigger = False, state = state}
+run programState = runRecursive TickInfo {debuggerTrigger = False, programState = programState}
 
 runRecursive :: (Monad m) => TickInfo -> CustomOperations m -> m (EndOfProgram, TickInfo)
 runRecursive tickInfo operations = do
@@ -144,9 +140,9 @@ runRecursive tickInfo operations = do
     Abort -> return (Aborted, tickInfo)
 
 tick :: (Monad m) => TickInfo -> CustomOperations m -> m (Either EndOfProgram TickInfo)
-tick tickInfo@TickInfo {state} operations =
-  let blocks = cells state
-      oldValues = values state
+tick tickInfo@TickInfo {programState} operations =
+  let blocks = cells programState
+      oldValues = values programState
       -- First advance values leaving jump pad by one
       jumpedValues =
         mapIf
@@ -158,13 +154,13 @@ tick tickInfo@TickInfo {state} operations =
       -- Move values and delete out of bounds ones
       movedValues = filter (isInBounds (gridDimensions blocks) . position) (map moveValue jumpedValues)
       -- Find values at each block
-      blocksWithMovedValues = concat $ blocksWithValues state {values = movedValues}
+      blocksWithMovedValues = concat $ blocksWithValues programState {values = movedValues}
       -- Do fusion
-      blocksWithValuesGroupedByMomentum =
-        map (Data.Bifunctor.second (Data.List.NonEmpty.groupAllWith momentum)) blocksWithMovedValues
       blocksWithValuesAfterFusion =
-        map (Data.Bifunctor.second doFusion) blocksWithValuesGroupedByMomentum
+        map (Data.Bifunctor.second doFusion) groupedByMomentum
         where
+          groupedByMomentum =
+            map (Data.Bifunctor.second (Data.List.NonEmpty.groupAllWith momentum)) blocksWithMovedValues
           doFusion =
             map $
               \values ->
@@ -172,31 +168,30 @@ tick tickInfo@TickInfo {state} operations =
                     updatedWaiting = all waiting values -- If one has not already waited, result should wait again
                  in (Data.List.NonEmpty.head values) {numericValue = updatedNumericValue, waiting = updatedWaiting}
       -- Handle collisions
-      collisionResults = mapM (uncurry (handleCollision operations)) blocksWithValuesAfterFusion
       valuesAfterCollisionHandling =
         foldl
-          ( \a b ->
-              let extractPriorityCollisionResult resultA resultB = case (resultA, resultB) of
-                    -- Errors have highest priority
-                    (e@(Left (Errored _)), _) -> e
-                    (_, e@(Left (Errored _))) -> e
-                    -- Next priority is halted
-                    (h@(Left (Halted _)), _) -> h
-                    (_, h@(Left (Halted _))) -> h
-                    -- Next priority is any other termination
-                    -- Dath can't be returned here but still
-                    (t@(Left _), _) -> t
-                    (_, t@(Left _)) -> t
-                    -- Lastly, we know both are okay
-                    (Right (valuesA, debuggerTriggerA), Right (valuesB, debuggerTriggerB)) ->
-                      Right $
-                        ( valuesA ++ valuesB,
-                          debuggerTriggerA || debuggerTriggerB
-                        )
-               in extractPriorityCollisionResult a b
+          ( \resultA resultB -> case (resultA, resultB) of
+              -- Errors have highest priority
+              (e@(Left (Errored _)), _) -> e
+              (_, e@(Left (Errored _))) -> e
+              -- Next priority is halted
+              (h@(Left (Halted _)), _) -> h
+              (_, h@(Left (Halted _))) -> h
+              -- Next priority is any other termination
+              -- Death can't be returned here but still
+              (t@(Left _), _) -> t
+              (_, t@(Left _)) -> t
+              -- Lastly, we know both are okay
+              (Right (valuesA, debuggerTriggerA), Right (valuesB, debuggerTriggerB)) ->
+                Right $
+                  ( valuesA ++ valuesB,
+                    debuggerTriggerA || debuggerTriggerB
+                  )
           )
           (Right ([], False))
           <$> collisionResults
+        where
+          collisionResults = mapM (uncurry (handleCollision operations)) blocksWithValuesAfterFusion
       -- A board with no values may exist for one tick, therefore check old values instead of new ones
       isDead = null oldValues
    in if isDead
@@ -204,7 +199,7 @@ tick tickInfo@TickInfo {state} operations =
         else
           fmap
             ( \(valuesAfterHandling, debuggerTrigger) ->
-                (tickInfo {state = state {values = valuesAfterHandling}, debuggerTrigger = debuggerTrigger})
+                (tickInfo {programState = programState {values = valuesAfterHandling}, debuggerTrigger = debuggerTrigger})
             )
             <$> valuesAfterCollisionHandling
 

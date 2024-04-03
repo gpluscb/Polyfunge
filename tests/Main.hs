@@ -2,7 +2,7 @@
 
 module Main where
 
-import Control.Monad.Trans.State
+import Control.Monad.Trans.State (State, runState, state)
 import Data.Char (digitToInt, isNumber)
 import Parse (ParseMultiDigitsResult (number), parseLargeNumber, parseProgram)
 import ProgramData (Direction (DirDown, DirLeft, DirRight, DirUp), EndOfProgram (Died, Errored, Halted), ProgramState)
