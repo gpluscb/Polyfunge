@@ -10,14 +10,9 @@ import qualified Data.Bifunctor
 import Data.Char (chr, ord)
 import qualified Data.List.NonEmpty
 import ProgramData
-import qualified Render
+import qualified Render (renderTick)
 import System.Random (randomRIO)
 import Utils
-
-data TickInfo = TickInfo
-  { debuggerTrigger :: Bool,
-    programState :: ProgramState
-  }
 
 type InputNumberOperation m = m Int
 
@@ -67,7 +62,6 @@ initialDebuggerState = DebuggerState {tickCount = 0, stepping = True}
 
 debugInspectTickOperation :: Int -> InspectTickOperation (StateT DebuggerState IO)
 debugInspectTickOperation microsecs TickInfo {debuggerTrigger, programState} = do
-  _ <- lift $ threadDelay microsecs
   DebuggerState {tickCount, stepping} <- get
   _ <- incrTickCount
   _ <- lift $ putStrLn $ Render.renderTick tickCount programState
@@ -75,7 +69,8 @@ debugInspectTickOperation microsecs TickInfo {debuggerTrigger, programState} = d
     then do
       _ <- lift $ putStrLn "Program paused. Press enter or s to step once, c to continue, or a to abort"
       getAndApplyDebuggerAction
-    else
+    else do
+      _ <- lift $ threadDelay microsecs
       return Continue
   where
     getAndApplyDebuggerAction = do

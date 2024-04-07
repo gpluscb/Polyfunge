@@ -5,8 +5,8 @@ module Main where
 import Control.Monad.Trans.State (State, runState, state)
 import Data.Char (digitToInt, isNumber)
 import Parse (ParseMultiDigitsResult (number), parseLargeNumber, parseProgram)
-import ProgramData (Direction (DirDown, DirLeft, DirRight, DirUp), EndOfProgram (Died, Errored, Halted), ProgramState)
-import Runner (ContinueAction (Continue), CustomOperations (CustomOperations, inputAscii, inputNumber, inputRandom, inspectTick, output), TickInfo, run)
+import ProgramData (Direction (DirDown, DirLeft, DirRight, DirUp), EndOfProgram (Died, Errored, Halted), ProgramState, TickInfo)
+import Runner (ContinueAction (Continue), CustomOperations (CustomOperations, inputAscii, inputNumber, inputRandom, inspectTick, output), run)
 import Test.HUnit (Test (TestCase, TestLabel, TestList), runTestTTAndExit)
 import TestUtils
 import Utils (mapEither, mapLeft)

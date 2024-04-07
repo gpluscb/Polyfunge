@@ -4,6 +4,11 @@ module ProgramData where
 
 import Utils
 
+data TickInfo = TickInfo
+  { debuggerTrigger :: Bool,
+    programState :: ProgramState
+  }
+
 data ProgramState = ProgramState
   { values :: [Value],
     cells :: [[Block]]
