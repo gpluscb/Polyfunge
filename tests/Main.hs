@@ -3,10 +3,10 @@
 module Main where
 
 import Control.Monad.Trans.State (State, runState, state)
-import Data.Char (digitToInt, isNumber)
+import Data.Char (chr, digitToInt, isNumber)
 import Parse (ParseMultiDigitsResult (number), parseLargeNumber, parseProgram)
 import ProgramData (Direction (DirDown, DirLeft, DirRight, DirUp), EndOfProgram (Died, Errored, Halted), ProgramState, TickInfo)
-import Runner (ContinueAction (Continue), CustomOperations (CustomOperations, inputAscii, inputNumber, inputRandom, inspectTick, output), run)
+import Runner (ContinueAction (Continue), CustomOperations (CustomOperations, inputAscii, inputNumber, inputRandom, inspectTick, outputAscii, outputNumber), run)
 import Test.HUnit (Test (TestCase, TestLabel, TestList), runTestTTAndExit)
 import TestUtils
 import Utils (mapEither, mapLeft)
@@ -27,7 +27,7 @@ data TestError
   | MoreInputsThanExpected
   | FewerInputsThanExpected {remaining :: [IoElement]}
   | DifferentInputTypeThanExpected
-  | OutputMismatch {actualOut :: [String], expectedOut :: [String]}
+  | OutputMismatch {actualOut :: [IoElement], expectedOut :: [IoElement]}
   deriving (Read, Show, Eq)
 
 data IoElement = Int Int | Char Char | Direction Direction
@@ -35,13 +35,13 @@ data IoElement = Int Int | Char Char | Direction Direction
 
 data IoState = IoState
   { remainingInput :: [IoElement],
-    collectedOutput :: [String]
+    collectedOutput :: [IoElement]
   }
   deriving (Read, Show, Eq)
 
 data TestFile = TestFile
   { inputBuffer :: [IoElement],
-    expectedOutput :: [String],
+    expectedOutput :: [IoElement],
     expectedExit :: EndOfProgram,
     program :: ProgramState
   }
@@ -69,7 +69,7 @@ runTestFile TestFile {inputBuffer, expectedOutput, expectedExit, program} =
     checkRemainingInput [] = Right ()
     checkRemainingInput remaining = Left FewerInputsThanExpected {remaining}
 
-    checkCollectedOutput :: [String] -> [String] -> Either TestError ()
+    checkCollectedOutput :: [IoElement] -> [IoElement] -> Either TestError ()
     checkCollectedOutput actualOut expectedOut =
       errorOnMismatch OutputMismatch {actualOut, expectedOut} actualOut expectedOut
 
@@ -122,16 +122,19 @@ parseInputBufferLine _ = Left "Test file: input buffer line is invalid"
 parseIoElement :: String -> Either String IoElement
 parseIoElement [n] | isNumber n = Right $ Int $ digitToInt n
 parseIoElement ('(' : n) =
-  mapEither (\_ -> "Test file: Input buffer has invalid number literal") (Int . number) $ parseLargeNumber n
+  mapEither (\_ -> "Test file: Invalid number literal") (Int . number) $ parseLargeNumber n
 parseIoElement ['\'', c] = Right $ Char c
 parseIoElement ['^'] = Right $ Direction DirUp
 parseIoElement ['v'] = Right $ Direction DirDown
 parseIoElement ['<'] = Right $ Direction DirLeft
 parseIoElement ['>'] = Right $ Direction DirRight
-parseIoElement _ = Left "Test file: Input buffer must contain valid polyfunge literals or conveyor directions"
+parseIoElement _ =
+  Left
+    "Test file: Input and output buffer must contain valid polyfunge literals. \
+    \Input buffer may also have conveyor directions"
 
-parseExpectedOutputLine :: String -> Either String [String]
-parseExpectedOutputLine ('O' : ' ' : rest) = Right $ words rest
+parseExpectedOutputLine :: String -> Either String [IoElement]
+parseExpectedOutputLine ('O' : ' ' : rest) = sequence $ map parseIoElement $ words rest
 parseExpectedOutputLine "O" = Right []
 parseExpectedOutputLine _ = Left "Test file: expected output line is invalid"
 
@@ -155,7 +158,8 @@ testOperations =
     { inputNumber = state $ tryApplyTransformer inputNumberTransformer 0 (),
       inputAscii = state $ tryApplyTransformer inputAsciiTransformer ' ' (),
       inputRandom = state $ tryApplyTransformer inputRandomTransformer DirDown (),
-      output = state . tryApplyTransformer outputTransformer (),
+      outputNumber = state . tryApplyTransformer outputNumberTransformer (),
+      outputAscii = state . tryApplyTransformer outputAsciiTransformer (),
       inspectTick = state . tryApplyTransformer inspectTickTransformer Continue
     }
   where
@@ -188,11 +192,17 @@ testOperations =
       )
     inputRandomTransformer default' () IoState {remainingInput = _ : _} = (default', Left DifferentInputTypeThanExpected)
 
-    outputTransformer :: StateTransformer String ()
+    outputTransformer :: StateTransformer IoElement ()
     outputTransformer () input prevState@IoState {collectedOutput} =
       ( (),
         Right prevState {collectedOutput = collectedOutput ++ [input]}
       )
+
+    outputNumberTransformer :: StateTransformer Int ()
+    outputNumberTransformer () input = outputTransformer () (Int input)
+
+    outputAsciiTransformer :: StateTransformer Int ()
+    outputAsciiTransformer () input = outputTransformer () (Char $ chr input)
 
     inspectTickTransformer :: StateTransformer TickInfo ContinueAction
     inspectTickTransformer default' _ prevState =

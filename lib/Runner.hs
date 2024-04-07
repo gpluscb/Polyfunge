@@ -40,10 +40,15 @@ standardRandomInputOperation = do
     3 -> DirRight
     _ -> error "Unreachable"
 
-type OutputOperation m = String -> m ()
+type OutputOperation m = Int -> m ()
 
-standardOutputOperation :: OutputOperation IO
-standardOutputOperation = putStrLn
+standardOutputNumberOperation :: OutputOperation IO
+standardOutputNumberOperation = print
+
+type OutputAsciiOperation m = Int -> m ()
+
+standardOutputAsciiOperation :: OutputOperation IO
+standardOutputAsciiOperation c = putChar $ chr c
 
 data ContinueAction = Continue | Abort
 
@@ -90,7 +95,8 @@ data CustomOperations m = CustomOperations
   { inputNumber :: InputNumberOperation m,
     inputAscii :: InputAsciiOperation m,
     inputRandom :: RandomInputOperation m,
-    output :: OutputOperation m,
+    outputNumber :: OutputOperation m,
+    outputAscii :: OutputOperation m,
     inspectTick :: InspectTickOperation m
   }
 
@@ -100,7 +106,8 @@ standardOperations =
     { inputNumber = standardInputOperation,
       inputAscii = standardInputAsciiOperation,
       inputRandom = standardRandomInputOperation,
-      output = standardOutputOperation,
+      outputNumber = standardOutputNumberOperation,
+      outputAscii = standardOutputAsciiOperation,
       inspectTick = standardInspectTickOperation
     }
 
@@ -110,7 +117,8 @@ debugOperations microsecs =
     { inputNumber = lift standardInputOperation,
       inputAscii = lift standardInputAsciiOperation,
       inputRandom = lift standardRandomInputOperation,
-      output = lift . standardOutputOperation,
+      outputNumber = lift . standardOutputNumberOperation,
+      outputAscii = lift . standardOutputAsciiOperation,
       inspectTick = debugInspectTickOperation microsecs
     }
 
@@ -314,15 +322,14 @@ handleCollision CustomOperations {inputAscii} (Io InputAscii) [value] =
         ( [value {numericValue = ord c}],
           False
         )
-handleCollision CustomOperations {output} (Io PrintDecimal) [value] =
+handleCollision CustomOperations {outputNumber} (Io PrintDecimal) [value] =
   do
-    output $ show (numericValue value)
+    outputNumber $ numericValue value
     return $ Right ([value], False)
-handleCollision CustomOperations {output} (Io PrintAscii) [value] =
-  let char = chr (numericValue value)
-   in do
-        output [char]
-        return $ Right ([value], False)
+handleCollision CustomOperations {outputAscii} (Io PrintAscii) [value] =
+  do
+    outputAscii $ numericValue value
+    return $ Right ([value], False)
 handleCollision _ (Io Break) [value] =
   return $ Right ([value], True)
 handleCollision _ (Io Halt) [value] = return $ Left $ Halted (numericValue value)
