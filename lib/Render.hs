@@ -4,12 +4,15 @@ import Data.List (intercalate)
 import Data.Maybe (fromMaybe, listToMaybe)
 import ProgramData
 
-renderTick :: Int -> ProgramState -> String
-renderTick tickCount state =
+renderTick :: Int -> String -> ProgramState -> String
+renderTick tickCount output state =
   "Tick "
     ++ show tickCount
     ++ "\n\n"
     ++ renderState state
+    ++ "\n"
+    ++ "Program output: "
+    ++ output
     ++ "\n"
 
 renderState :: ProgramState -> String

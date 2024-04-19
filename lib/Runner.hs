@@ -45,10 +45,16 @@ type OutputOperation m = Int -> m ()
 standardOutputNumberOperation :: OutputOperation IO
 standardOutputNumberOperation = print
 
+debugOutputNumberOperation :: OutputOperation (StateT DebuggerState IO)
+debugOutputNumberOperation num = modify $ \debuggerState -> debuggerState {output = output debuggerState ++ " " ++ (show num)}
+
 type OutputAsciiOperation m = Int -> m ()
 
 standardOutputAsciiOperation :: OutputOperation IO
 standardOutputAsciiOperation c = putChar $ chr c
+
+debugOutputAsciiOperation :: OutputOperation (StateT DebuggerState IO)
+debugOutputAsciiOperation c = modify $ \debuggerState -> debuggerState {output = output debuggerState ++ [chr c]}
 
 data ContinueAction = Continue | Abort
 
@@ -59,17 +65,18 @@ standardInspectTickOperation _ = return Continue
 
 data DebuggerState = DebuggerState
   { tickCount :: Int,
-    stepping :: Bool
+    stepping :: Bool,
+    output :: String
   }
 
 initialDebuggerState :: DebuggerState
-initialDebuggerState = DebuggerState {tickCount = 0, stepping = True}
+initialDebuggerState = DebuggerState {tickCount = 0, stepping = True, output = ""}
 
 debugInspectTickOperation :: Int -> InspectTickOperation (StateT DebuggerState IO)
 debugInspectTickOperation microsecs TickInfo {debuggerTrigger, programState} = do
-  DebuggerState {tickCount, stepping} <- get
+  DebuggerState {tickCount, stepping, output} <- get
   _ <- incrTickCount
-  _ <- lift $ putStrLn $ Render.renderTick tickCount programState
+  _ <- lift $ putStrLn $ Render.renderTick tickCount output programState
   if stepping || debuggerTrigger
     then do
       _ <- lift $ putStrLn "Program paused. Press enter or s to step once, c to continue, or a to abort"
@@ -117,8 +124,8 @@ debugOperations microsecs =
     { inputNumber = lift standardInputOperation,
       inputAscii = lift standardInputAsciiOperation,
       inputRandom = lift standardRandomInputOperation,
-      outputNumber = lift . standardOutputNumberOperation,
-      outputAscii = lift . standardOutputAsciiOperation,
+      outputNumber = debugOutputNumberOperation,
+      outputAscii = debugOutputAsciiOperation,
       inspectTick = debugInspectTickOperation microsecs
     }
 
